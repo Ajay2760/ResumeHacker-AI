@@ -1,0 +1,196 @@
+Build a full-stack AI Resume & Job Coach web application. Here is everything you need to know to build it perfectly.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OVERVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This app helps job seekers optimize their resumes for specific job descriptions using AI.
+The user pastes a job description AND uploads their resume. The AI then:
+  1. Calculates an ATS match score (0–100)
+  2. Identifies missing keywords and skills
+  3. Rewrites weak bullet points into strong, quantified achievement statements
+  4. Provides a structured feedback report with actionable suggestions
+  5. Highlights recruiter red flags in the current resume
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TECH STACK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Frontend  : React + TailwindCSS
+Backend   : Node.js + Express (or Next.js API routes)
+AI        : Anthropic Claude API (claude-sonnet-4-20250514)
+File Parse: pdf-parse (for PDF resume extraction)
+Hosting   : Vercel or Railway
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PAGES & LAYOUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Single-page app with two visual states:
+
+STATE 1 — INPUT VIEW (before analysis)
+  - App header with logo: "ResumeAI" and tagline "Get past the ATS. Impress the human."
+  - Two-column layout on desktop, stacked on mobile:
+      LEFT  → Job Description input (large textarea, min 200px tall)
+              Label: "Paste the job description"
+              Placeholder: "Copy the full job posting here — the more detail, the better."
+      RIGHT → Resume upload zone
+              Drag-and-drop area with dashed border
+              Accepts: PDF, DOCX, or plain text paste
+              Show file name once uploaded with a remove (×) button
+              Also show a "Or paste your resume text" toggle link that reveals a textarea
+  - A large CTA button below both columns: "Analyze My Resume →"
+      Disabled + shows spinner while processing
+      Button text changes to "Analyzing..." during API call
+
+STATE 2 — RESULTS VIEW (after analysis)
+  - Back button: "← Analyze another resume"
+  - Results are shown in a clean card-based dashboard
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RESULTS DASHBOARD — COMPONENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT 1: ATS MATCH SCORE CARD (top, full width)
+  - Large animated circular progress ring showing score (e.g. 67/100)
+  - Color coding:
+      0–40   → red   (Poor match)
+      41–70  → amber (Needs work)
+      71–89  → blue  (Good match)
+      90–100 → green (Excellent match)
+  - Label below score: "ATS Compatibility Score"
+  - Short one-line verdict: e.g. "Your resume matches 67% of the job requirements."
+  - Animate the ring filling up when results load (CSS animation, 1.2s ease-out)
+
+COMPONENT 2: KEYWORD ANALYSIS (two columns)
+  LEFT → "Keywords You Have" — green chip badges for matched keywords
+  RIGHT → "Missing Keywords" — red chip badges for keywords from JD not in resume
+  - Each chip is a small rounded pill with the keyword text
+  - Show count at top: e.g. "12 matched · 8 missing"
+  - Clicking a missing keyword chip adds it to a clipboard area
+
+COMPONENT 3: BULLET POINT REWRITER (accordion list)
+  - AI identifies the 3–5 weakest bullet points from the resume
+  - Each item shows:
+      BEFORE (gray background): original weak bullet
+      AFTER  (green background): AI-rewritten version with action verb + metric
+  - Toggle button to switch between "Original" and "Improved"
+  - "Copy improved bullet" button on each card
+
+COMPONENT 4: RECRUITER RED FLAGS (warning list)
+  - Amber warning cards listing issues like:
+      · Resume exceeds 2 pages
+      · No quantified achievements found
+      · Generic objective statement detected
+      · Employment gaps not addressed
+      · Skills section buried at the bottom
+  - Each flag has an icon (⚠) and a short fix suggestion below it
+
+COMPONENT 5: AI FEEDBACK SUMMARY (bottom card)
+  - 3–4 paragraph narrative from the AI
+  - Sections: Overall Impression | Key Strengths | Priority Improvements | Final Recommendation
+  - Use subtle section headings inside the card
+  - Ends with: "Confidence level for this role: High / Medium / Low" with a colored badge
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+API INTEGRATION — CLAUDE AI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a POST /api/analyze endpoint.
+
+It receives:
+  - resumeText (string) — extracted text from uploaded resume
+  - jobDescription (string) — pasted job description
+
+Send this system prompt to Claude:
+
+  "You are an expert ATS (Applicant Tracking System) analyst and executive resume coach 
+  with 15+ years of experience in talent acquisition at Fortune 500 companies. 
+  Your job is to analyze a candidate's resume against a specific job description 
+  and return a structured JSON analysis. Be direct, specific, and actionable. 
+  Never be vague. Always return valid JSON — no markdown, no preamble."
+
+Send this user message:
+
+  "Analyze the resume against the job description and return ONLY a JSON object with:
+  {
+    matchScore: number (0-100),
+    matchedKeywords: string[],
+    missingKeywords: string[],
+    weakBullets: [{ original: string, improved: string }],
+    redFlags: [{ issue: string, fix: string }],
+    summary: {
+      overallImpression: string,
+      keyStrengths: string,
+      priorityImprovements: string,
+      finalRecommendation: string,
+      confidenceLevel: 'High' | 'Medium' | 'Low'
+    }
+  }
+  
+  Resume: [INSERT RESUME TEXT]
+  Job Description: [INSERT JD TEXT]"
+
+Parse the JSON response and send it to the frontend.
+Handle errors gracefully — show a toast if parsing fails.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+UX DETAILS & MICRO-INTERACTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Skeleton loading cards shown while API call is in-flight
+- Smooth scroll to results after analysis completes
+- Toast notification: "Analysis complete! ✓" (green, top-right, auto-dismiss 3s)
+- All "Copy" buttons change to "Copied ✓" for 2 seconds after click
+- Drag-and-drop upload zone highlights with a blue border on dragover
+- Mobile responsive — all cards stack vertically on screens < 768px
+- Dark mode support via Tailwind's dark: classes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FILE PARSING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Use pdf-parse on the backend to extract text from PDF uploads
+- Use mammoth for DOCX extraction
+- If plain text is pasted, use it directly
+- Strip excessive whitespace and normalize line breaks before sending to Claude
+- Show character count of extracted text to reassure user: "Resume extracted: 1,842 characters"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ENVIRONMENT VARIABLES NEEDED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ANTHROPIC_API_KEY=your_key_here
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VISUAL DESIGN DIRECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Clean, professional SaaS aesthetic — think Linear or Notion
+- White background, subtle gray card borders
+- Typography: Inter or system-ui, weights 400 and 600 only
+- Primary accent color: Indigo (#4F46E5)
+- Success: Green (#16A34A), Warning: Amber (#D97706), Danger: Red (#DC2626)
+- No stock photos or illustrations — use minimal iconography only
+- Generous padding and whitespace — this is a professional tool, not a toy
+- The score ring animation is the hero moment — make it satisfying
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STRETCH GOALS (implement if time allows)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- "Download Improved Bullets as PDF" button
+- Side-by-side resume diff view (original vs improved)
+- History: store last 3 analyses in localStorage
+- Share results via a unique URL (store in DB)
+- LinkedIn-style profile completeness bar for resume sections
+- Typewriter animation for the AI feedback summary text
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+START HERE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Begin by scaffolding the project, setting up the API route, and building 
+the input view with file upload. Then wire up the Claude API call and 
+render the results dashboard. Test with a real resume and job description 
+before styling.

@@ -14,3 +14,43 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Uses AI to analyze a resume against a job description and returns a structured report
+ * @summary Analyze resume against job description
+ */
+export const AnalyzeResumeBody = zod.object({
+  resumeText: zod.string().describe("Extracted text from the uploaded resume"),
+  jobDescription: zod.string().describe("The full job description text"),
+});
+
+export const analyzeResumeResponseMatchScoreMin = 0;
+export const analyzeResumeResponseMatchScoreMax = 100;
+
+export const AnalyzeResumeResponse = zod.object({
+  matchScore: zod
+    .number()
+    .min(analyzeResumeResponseMatchScoreMin)
+    .max(analyzeResumeResponseMatchScoreMax),
+  matchedKeywords: zod.array(zod.string()),
+  missingKeywords: zod.array(zod.string()),
+  weakBullets: zod.array(
+    zod.object({
+      original: zod.string(),
+      improved: zod.string(),
+    }),
+  ),
+  redFlags: zod.array(
+    zod.object({
+      issue: zod.string(),
+      fix: zod.string(),
+    }),
+  ),
+  summary: zod.object({
+    overallImpression: zod.string(),
+    keyStrengths: zod.string(),
+    priorityImprovements: zod.string(),
+    finalRecommendation: zod.string(),
+    confidenceLevel: zod.enum(["High", "Medium", "Low"]),
+  }),
+});

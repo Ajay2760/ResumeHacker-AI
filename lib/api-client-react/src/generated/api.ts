@@ -5,18 +5,26 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  AnalysisResult,
+  AnalyzeResumeBody,
+  ErrorResponse,
+  HealthStatus,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +107,90 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Uses AI to analyze a resume against a job description and returns a structured report
+ * @summary Analyze resume against job description
+ */
+export const getAnalyzeResumeUrl = () => {
+  return `/api/resume/analyze`;
+};
+
+export const analyzeResume = async (
+  analyzeResumeBody: AnalyzeResumeBody,
+  options?: RequestInit,
+): Promise<AnalysisResult> => {
+  return customFetch<AnalysisResult>(getAnalyzeResumeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(analyzeResumeBody),
+  });
+};
+
+export const getAnalyzeResumeMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeResume>>,
+    TError,
+    { data: BodyType<AnalyzeResumeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof analyzeResume>>,
+  TError,
+  { data: BodyType<AnalyzeResumeBody> },
+  TContext
+> => {
+  const mutationKey = ["analyzeResume"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof analyzeResume>>,
+    { data: BodyType<AnalyzeResumeBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return analyzeResume(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AnalyzeResumeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof analyzeResume>>
+>;
+export type AnalyzeResumeMutationBody = BodyType<AnalyzeResumeBody>;
+export type AnalyzeResumeMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Analyze resume against job description
+ */
+export const useAnalyzeResume = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeResume>>,
+    TError,
+    { data: BodyType<AnalyzeResumeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof analyzeResume>>,
+  TError,
+  { data: BodyType<AnalyzeResumeBody> },
+  TContext
+> => {
+  return useMutation(getAnalyzeResumeMutationOptions(options));
+};

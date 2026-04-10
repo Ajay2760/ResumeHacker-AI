@@ -8,3 +8,55 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface AnalyzeResumeBody {
+  /** Extracted text from the uploaded resume */
+  resumeText: string;
+  /** The full job description text */
+  jobDescription: string;
+}
+
+export interface WeakBullet {
+  original: string;
+  improved: string;
+}
+
+export interface RedFlag {
+  issue: string;
+  fix: string;
+}
+
+export type AnalysisSummaryConfidenceLevel =
+  (typeof AnalysisSummaryConfidenceLevel)[keyof typeof AnalysisSummaryConfidenceLevel];
+
+export const AnalysisSummaryConfidenceLevel = {
+  High: "High",
+  Medium: "Medium",
+  Low: "Low",
+} as const;
+
+export interface AnalysisSummary {
+  overallImpression: string;
+  keyStrengths: string;
+  priorityImprovements: string;
+  finalRecommendation: string;
+  confidenceLevel: AnalysisSummaryConfidenceLevel;
+}
+
+export interface AnalysisResult {
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  matchScore: number;
+  matchedKeywords: string[];
+  missingKeywords: string[];
+  weakBullets: WeakBullet[];
+  redFlags: RedFlag[];
+  summary: AnalysisSummary;
+}
+
+export interface ErrorResponse {
+  error: string;
+  message: string;
+}

@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: resume
+    description: Resume analysis operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /resume/analyze:
+    post:
+      operationId: analyzeResume
+      tags: [resume]
+      summary: Analyze resume against job description
+      description: Uses AI to analyze a resume against a job description and returns a structured report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeResumeBody"
+      responses:
+        "200":
+          description: Analysis complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +66,97 @@ components:
           type: string
       required:
         - status
-
+    AnalyzeResumeBody:
+      type: object
+      properties:
+        resumeText:
+          type: string
+          description: Extracted text from the uploaded resume
+        jobDescription:
+          type: string
+          description: The full job description text
+      required:
+        - resumeText
+        - jobDescription
+    WeakBullet:
+      type: object
+      properties:
+        original:
+          type: string
+        improved:
+          type: string
+      required:
+        - original
+        - improved
+    RedFlag:
+      type: object
+      properties:
+        issue:
+          type: string
+        fix:
+          type: string
+      required:
+        - issue
+        - fix
+    AnalysisSummary:
+      type: object
+      properties:
+        overallImpression:
+          type: string
+        keyStrengths:
+          type: string
+        priorityImprovements:
+          type: string
+        finalRecommendation:
+          type: string
+        confidenceLevel:
+          type: string
+          enum: [High, Medium, Low]
+      required:
+        - overallImpression
+        - keyStrengths
+        - priorityImprovements
+        - finalRecommendation
+        - confidenceLevel
+    AnalysisResult:
+      type: object
+      properties:
+        matchScore:
+          type: number
+          minimum: 0
+          maximum: 100
+        matchedKeywords:
+          type: array
+          items:
+            type: string
+        missingKeywords:
+          type: array
+          items:
+            type: string
+        weakBullets:
+          type: array
+          items:
+            $ref: "#/components/schemas/WeakBullet"
+        redFlags:
+          type: array
+          items:
+            $ref: "#/components/schemas/RedFlag"
+        summary:
+          $ref: "#/components/schemas/AnalysisSummary"
+      required:
+        - matchScore
+        - matchedKeywords
+        - missingKeywords
+        - weakBullets
+        - redFlags
+        - summary
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
