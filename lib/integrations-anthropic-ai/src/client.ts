@@ -25,8 +25,15 @@ export type ResumeLlmBackend = "anthropic" | "openai" | "groq";
  * - AI_PROVIDER=anthropic → Anthropic (needs ANTHROPIC_API_KEY or Replit integration)
  * - unset → Anthropic if configured, else OpenAI, else Groq
  */
+function normalizeAiProvider(raw: string | undefined): string {
+  return (raw ?? "")
+    .trim()
+    .replace(/^['"]+|['"]+$/g, "")
+    .toLowerCase();
+}
+
 export function getResumeLlmBackend(): ResumeLlmBackend {
-  const explicit = process.env.AI_PROVIDER?.trim().toLowerCase();
+  const explicit = normalizeAiProvider(process.env.AI_PROVIDER);
   if (explicit === "groq") {
     if (!hasGroqCredentials()) {
       throw new Error("AI_PROVIDER=groq requires GROQ_API_KEY (free key: console.groq.com).");

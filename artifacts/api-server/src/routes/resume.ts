@@ -67,36 +67,66 @@ function sendAiRouteError(
     return;
   }
 
+  // Groq/OpenAI often put "quota" in **rate limit** errors — handle limits before "billing".
+  const looksLikeRateCap =
+    status === 429 ||
+    status === 529 ||
+    lower.includes("rate limit") ||
+    lower.includes("overloaded") ||
+    lower.includes("too many requests") ||
+    (lower.includes("quota") &&
+      (lower.includes("rate") ||
+        lower.includes("rpm") ||
+        lower.includes("tpm") ||
+        lower.includes("rpd") ||
+        lower.includes("per minute") ||
+        lower.includes("per day") ||
+        lower.includes("exceeded")));
+
+  if (looksLikeRateCap) {
+    res.status(503).json({
+      error: "ai_busy",
+      message:
+        backend === "groq"
+          ? "Groq rate limit reached (free tier has RPM/RPD caps). Wait a minute or check Limits at console.groq.com — or try GROQ_MODEL=llama-3.1-8b-instant for higher daily allowance."
+          : "The AI service is busy or rate-limited. Wait a minute and try again.",
+    });
+    return;
+  }
+
   if (
     status === 402 ||
     status === 403 ||
     lower.includes("credit") ||
     lower.includes("billing") ||
-    lower.includes("quota") ||
-    lower.includes("insufficient")
+    lower.includes("insufficient_quota") ||
+    (lower.includes("insufficient") && lower.includes("fund"))
   ) {
     const name = backend === "openai" ? "OpenAI" : backend === "groq" ? "Groq" : "Anthropic";
+    const hint =
+      backend === "groq"
+        ? "Check the key at console.groq.com (API Keys), redeploy after changing env vars, and confirm the key is not restricted. HTTP 403 can also mean the model is not enabled for your account — try GROQ_MODEL=llama-3.1-8b-instant."
+        : "For a free option, set GROQ_API_KEY from console.groq.com and AI_PROVIDER=groq.";
     res.status(502).json({
       error: "ai_billing",
-      message: `${name} refused the request (billing, quota, or permissions). For a free option, use Groq: set GROQ_API_KEY from console.groq.com and AI_PROVIDER=groq (remove or ignore paid keys if needed).`,
+      message: `${name} refused the request (billing or permissions). ${hint}`,
     });
     return;
   }
 
-  if (status === 429 || status === 529 || lower.includes("rate limit") || lower.includes("overloaded")) {
-    res.status(503).json({
-      error: "ai_busy",
-      message: "The AI service is busy or rate-limited. Wait a minute and try again.",
-    });
-    return;
-  }
-
-  if (status === 400 && (lower.includes("model") || lower.includes("not_found"))) {
+  if (
+    (status === 400 || status === 403) &&
+    (lower.includes("model") ||
+      lower.includes("not_found") ||
+      lower.includes("invalid model") ||
+      lower.includes("does not exist") ||
+      lower.includes("unknown model"))
+  ) {
     const modelLabel =
       backend === "openai" ? openaiModel : backend === "groq" ? groqModel : anthropicModel;
     res.status(502).json({
       error: "ai_model",
-      message: `The configured model (${modelLabel}) was rejected. Set OPENAI_MODEL, GROQ_MODEL, or ANTHROPIC_MODEL, or use AI_PROVIDER=groq with a free GROQ_API_KEY (see console.groq.com/docs/models).`,
+      message: `The configured model (${modelLabel}) was rejected. For Groq use a current ID from their docs (default: llama-3.1-8b-instant). Set GROQ_MODEL or clear it to use the default.`,
     });
     return;
   }
