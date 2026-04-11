@@ -1,0 +1,50 @@
+2026-04-11T04:15:11.653460103Z   dist/pino-file.mjs.map             229.0kb
+2026-04-11T04:15:11.653463253Z   dist/pino-pretty.mjs.map           203.9kb
+2026-04-11T04:15:11.653466313Z   dist/thread-stream-worker.mjs.map   12.0kb
+2026-04-11T04:15:11.653469333Z 
+2026-04-11T04:15:11.653472753Z ⚡ Done in 300ms
+2026-04-11T04:15:16.823674285Z ==> Uploading build...
+2026-04-11T04:15:28.53311891Z ==> Uploaded in 6.4s. Compression took 5.3s
+2026-04-11T04:15:28.58487589Z ==> Build successful 🎉
+2026-04-11T04:15:30.496584752Z ==> Deploying...
+2026-04-11T04:15:30.555535894Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-04-11T04:15:56.062229139Z ==> Running 'pnpm --filter @workspace/api-server run start'
+2026-04-11T04:15:59.959517324Z 
+2026-04-11T04:15:59.959556305Z > @workspace/api-server@0.0.0 start /opt/render/project/src/artifacts/api-server
+2026-04-11T04:15:59.959564935Z > node --enable-source-maps ./dist/index.mjs
+2026-04-11T04:15:59.959568855Z 
+2026-04-11T04:16:01.553775581Z /opt/render/project/src/lib/integrations-anthropic-ai/src/client.ts:4
+2026-04-11T04:16:01.553802151Z   throw new Error(
+2026-04-11T04:16:01.553805271Z         ^
+2026-04-11T04:16:01.553807782Z 
+2026-04-11T04:16:01.553810882Z Error: AI_INTEGRATIONS_ANTHROPIC_BASE_URL must be set. Did you forget to provision the Anthropic AI integration?
+2026-04-11T04:16:01.553817022Z     at <anonymous> (/opt/render/project/src/lib/integrations-anthropic-ai/src/client.ts:4:9)
+2026-04-11T04:16:01.553821062Z     at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2026-04-11T04:16:01.553824922Z     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+2026-04-11T04:16:01.553828632Z     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+2026-04-11T04:16:01.553831982Z 
+2026-04-11T04:16:01.553835162Z Node.js v22.22.0
+2026-04-11T04:16:01.666494665Z /opt/render/project/src/artifacts/api-server:
+2026-04-11T04:16:01.666528686Z  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/api-server@0.0.0 start: `node --enable-source-maps ./dist/index.mjs`
+2026-04-11T04:16:01.666534696Z Exit status 1
+2026-04-11T04:16:03.031261079Z ==> Exited with status 1
+2026-04-11T04:16:03.033355736Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+2026-04-11T04:16:09.018023627Z ==> Running 'pnpm --filter @workspace/api-server run start'
+2026-04-11T04:16:12.215448179Z 
+2026-04-11T04:16:12.21549286Z > @workspace/api-server@0.0.0 start /opt/render/project/src/artifacts/api-server
+2026-04-11T04:16:12.21550057Z > node --enable-source-maps ./dist/index.mjs
+2026-04-11T04:16:12.2155047Z 
+2026-04-11T04:16:13.81369682Z /opt/render/project/src/lib/integrations-anthropic-ai/src/client.ts:4
+2026-04-11T04:16:13.813730211Z   throw new Error(
+2026-04-11T04:16:13.813735551Z         ^
+2026-04-11T04:16:13.813740081Z 
+2026-04-11T04:16:13.813745431Z Error: AI_INTEGRATIONS_ANTHROPIC_BASE_URL must be set. Did you forget to provision the Anthropic AI integration?
+2026-04-11T04:16:13.813754081Z     at <anonymous> (/opt/render/project/src/lib/integrations-anthropic-ai/src/client.ts:4:9)
+2026-04-11T04:16:13.813759202Z     at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+2026-04-11T04:16:13.813764192Z     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+2026-04-11T04:16:13.813768902Z     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+2026-04-11T04:16:13.813773722Z 
+2026-04-11T04:16:13.813778362Z Node.js v22.22.0
+2026-04-11T04:16:14.011466771Z /opt/render/project/src/artifacts/api-server:
+2026-04-11T04:16:14.011497732Z  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/api-server@0.0.0 start: `node --enable-source-maps ./dist/index.mjs`
+2026-04-11T04:16:14.011505492Z Exit status 1
