@@ -9,3 +9,12 @@ export function anthropicMessagesModel(): string {
   }
   return "claude-sonnet-4-20250514";
 }
+
+/** OpenAI chat model when AI_PROVIDER / routing selects OpenAI. */
+export function openaiMessagesModel(): string {
+  const fromEnv = process.env.OPENAI_MODEL?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+  return "gpt-4o-mini";
+}

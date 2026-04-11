@@ -1,12 +1,18 @@
 import { Router, type Request, type Response } from "express";
 import { AnalyzeResumeBody } from "@workspace/api-zod";
-import { anthropic, anthropicMessagesModel } from "@workspace/integrations-anthropic-ai";
+import {
+  anthropicMessagesModel,
+  openaiMessagesModel,
+  type ResumeLlmBackend,
+} from "@workspace/integrations-anthropic-ai";
+import { resumeCompleteJson, resumeCompleteText, resumeLlmBackend } from "../lib/resume-llm";
 
 const router = Router();
 
-const model = anthropicMessagesModel();
+const anthropicModel = anthropicMessagesModel();
+const openaiModel = openaiMessagesModel();
 
-function extractAnthropicHttpDetails(err: unknown): { status?: number; message: string } {
+function extractAiHttpDetails(err: unknown): { status?: number; message: string } {
   if (!err || typeof err !== "object") {
     return { message: String(err) };
   }
@@ -23,8 +29,14 @@ function extractAnthropicHttpDetails(err: unknown): { status?: number; message: 
   return { status, message };
 }
 
-/** Maps Anthropic SDK / HTTP failures to a JSON body the UI can show safely. */
-function sendAnthropicRouteError(
+function configHint(backend: ResumeLlmBackend): string {
+  if (backend === "openai") {
+    return "Confirm OPENAI_API_KEY and OPENAI_MODEL on the server (Render → Environment).";
+  }
+  return "Confirm ANTHROPIC_API_KEY and ANTHROPIC_MODEL on the server (Render → Environment).";
+}
+
+function sendAiRouteError(
   req: Request,
   res: Response,
   err: unknown,
@@ -32,23 +44,33 @@ function sendAnthropicRouteError(
   genericUserMessage: string,
 ): void {
   req.log.error({ err }, logMessage);
-  const { status, message } = extractAnthropicHttpDetails(err);
+  const { status, message } = extractAiHttpDetails(err);
   const lower = message.toLowerCase();
+  const backend = resumeLlmBackend;
 
   if (status === 401) {
     res.status(502).json({
       error: "ai_auth",
       message:
-        "The AI provider rejected the API key. In Render, open Environment and set ANTHROPIC_API_KEY to a valid key from console.anthropic.com.",
+        backend === "openai"
+          ? "OpenAI rejected the API key. Set OPENAI_API_KEY in Render → Environment (platform.openai.com)."
+          : "Anthropic rejected the API key. Set ANTHROPIC_API_KEY in Render → Environment (console.anthropic.com).",
     });
     return;
   }
 
-  if (status === 403 || lower.includes("credit") || lower.includes("billing")) {
+  if (
+    status === 402 ||
+    status === 403 ||
+    lower.includes("credit") ||
+    lower.includes("billing") ||
+    lower.includes("quota") ||
+    lower.includes("insufficient")
+  ) {
+    const name = backend === "openai" ? "OpenAI" : "Anthropic";
     res.status(502).json({
       error: "ai_billing",
-      message:
-        "The AI provider refused the request (billing or permissions). Check your Anthropic account credits and API access.",
+      message: `${name} refused the request (billing, quota, or permissions). Add credits or fix account access for that provider — or set AI_PROVIDER=openai with OPENAI_API_KEY to use OpenAI instead of Anthropic.`,
     });
     return;
   }
@@ -62,16 +84,17 @@ function sendAnthropicRouteError(
   }
 
   if (status === 400 && (lower.includes("model") || lower.includes("not_found"))) {
+    const modelLabel = backend === "openai" ? openaiModel : anthropicModel;
     res.status(502).json({
       error: "ai_model",
-      message: `This server could not run the configured model (${model}). Set ANTHROPIC_MODEL in Render to one your key supports (for example claude-3-5-sonnet-20241022).`,
+      message: `The configured model (${modelLabel}) was rejected. For OpenAI set OPENAI_MODEL (e.g. gpt-4o-mini). For Anthropic set ANTHROPIC_MODEL, or switch provider with AI_PROVIDER=openai and OPENAI_API_KEY.`,
     });
     return;
   }
 
   res.status(500).json({
     error: "server_error",
-    message: `${genericUserMessage} If the problem continues, confirm ANTHROPIC_API_KEY and ANTHROPIC_MODEL on the server.`,
+    message: `${genericUserMessage} ${configHint(backend)}`,
   });
 }
 
@@ -113,21 +136,7 @@ Job Description:
 ${jobDescription}`;
 
   try {
-    const message = await anthropic.messages.create({
-      model,
-      max_tokens: 8192,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userMessage }],
-    });
-
-    const content = message.content[0];
-    if (content.type !== "text") {
-      res.status(500).json({ error: "ai_error", message: "Unexpected response from AI" });
-      return;
-    }
-
-    let jsonText = content.text.trim();
-    // Strip markdown code fences if present
+    let jsonText = await resumeCompleteJson(SYSTEM_PROMPT, userMessage, 8192);
     jsonText = jsonText.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "").trim();
 
     const result = JSON.parse(jsonText);
@@ -137,7 +146,7 @@ ${jobDescription}`;
       req.log.error({ err }, "Resume analysis JSON parse failed");
       res.status(500).json({ error: "parse_error", message: "Failed to parse AI response as JSON" });
     } else {
-      sendAnthropicRouteError(req, res, err, "Resume analysis failed", "Analysis failed.");
+      sendAiRouteError(req, res, err, "Resume analysis failed", "Analysis failed.");
     }
   }
 });
@@ -170,25 +179,15 @@ ${resumeText}
 Job Description:
 ${jobDescription}`;
 
+  const system =
+    "You are an expert career coach and professional cover letter writer with 15+ years of experience. You write compelling, personalized cover letters that get candidates interviews. Always write in the candidate's voice, never sound generic.";
+
   try {
-    const message = await anthropic.messages.create({
-      model,
-      max_tokens: 2048,
-      system: "You are an expert career coach and professional cover letter writer with 15+ years of experience. You write compelling, personalized cover letters that get candidates interviews. Always write in the candidate's voice, never sound generic.",
-      messages: [{ role: "user", content: userMessage }],
-    });
-
-    const content = message.content[0];
-    if (content.type !== "text") {
-      res.status(500).json({ error: "ai_error", message: "Unexpected response from AI" });
-      return;
-    }
-
-    const coverLetter = content.text.trim();
+    const coverLetter = (await resumeCompleteText(system, userMessage, 2048)).trim();
     const wordCount = coverLetter.split(/\s+/).filter(Boolean).length;
     res.json({ coverLetter, wordCount });
   } catch (err) {
-    sendAnthropicRouteError(req, res, err, "Cover letter generation failed", "Generation failed.");
+    sendAiRouteError(req, res, err, "Cover letter generation failed", "Generation failed.");
   }
 });
 
@@ -226,21 +225,11 @@ ${resumeText}
 Job Description:
 ${jobDescription}`;
 
+  const system =
+    "You are an expert career coach and skills development strategist. You create actionable, realistic career roadmaps that help candidates bridge skill gaps and land their target roles. Always return valid JSON only.";
+
   try {
-    const message = await anthropic.messages.create({
-      model,
-      max_tokens: 3000,
-      system: "You are an expert career coach and skills development strategist. You create actionable, realistic career roadmaps that help candidates bridge skill gaps and land their target roles. Always return valid JSON only.",
-      messages: [{ role: "user", content: userMessage }],
-    });
-
-    const content = message.content[0];
-    if (content.type !== "text") {
-      res.status(500).json({ error: "ai_error", message: "Unexpected response from AI" });
-      return;
-    }
-
-    let jsonText = content.text.trim();
+    let jsonText = await resumeCompleteJson(system, userMessage, 3000);
     jsonText = jsonText.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "").trim();
     const result = JSON.parse(jsonText);
     res.json(result);
@@ -249,7 +238,7 @@ ${jobDescription}`;
       req.log.error({ err }, "Career roadmap JSON parse failed");
       res.status(500).json({ error: "parse_error", message: "Failed to parse AI response" });
     } else {
-      sendAnthropicRouteError(req, res, err, "Career roadmap generation failed", "Generation failed.");
+      sendAiRouteError(req, res, err, "Career roadmap generation failed", "Generation failed.");
     }
   }
 });

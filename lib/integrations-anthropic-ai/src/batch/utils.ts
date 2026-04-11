@@ -10,12 +10,12 @@ import pRetry from "p-retry";
  * USAGE:
  * ```typescript
  * import { batchProcess } from "@workspace/integrations-anthropic-ai/batch";
- * import { anthropic } from "@workspace/integrations-anthropic-ai";
+ * import { getAnthropic } from "@workspace/integrations-anthropic-ai";
  *
  * const results = await batchProcess(
  *   artworks,
  *   async (artwork) => {
- *     const message = await anthropic.messages.create({
+ *     const message = await getAnthropic().messages.create({
  *       model: "claude-sonnet-4-6",
  *       max_tokens: 8192,
  *       messages: [{ role: "user", content: `Categorize: ${artwork.name}` }],
