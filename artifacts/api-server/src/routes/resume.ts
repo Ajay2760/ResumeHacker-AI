@@ -1,8 +1,79 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { AnalyzeResumeBody } from "@workspace/api-zod";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { anthropic, anthropicMessagesModel } from "@workspace/integrations-anthropic-ai";
 
 const router = Router();
+
+const model = anthropicMessagesModel();
+
+function extractAnthropicHttpDetails(err: unknown): { status?: number; message: string } {
+  if (!err || typeof err !== "object") {
+    return { message: String(err) };
+  }
+  const e = err as Record<string, unknown>;
+  const status = typeof e.status === "number" ? e.status : undefined;
+  let message = e.message != null ? String(e.message) : "Unknown error";
+  const inner = e.error;
+  if (inner && typeof inner === "object" && "message" in inner) {
+    const m = (inner as { message?: unknown }).message;
+    if (typeof m === "string" && m.trim()) {
+      message = m.trim();
+    }
+  }
+  return { status, message };
+}
+
+/** Maps Anthropic SDK / HTTP failures to a JSON body the UI can show safely. */
+function sendAnthropicRouteError(
+  req: Request,
+  res: Response,
+  err: unknown,
+  logMessage: string,
+  genericUserMessage: string,
+): void {
+  req.log.error({ err }, logMessage);
+  const { status, message } = extractAnthropicHttpDetails(err);
+  const lower = message.toLowerCase();
+
+  if (status === 401) {
+    res.status(502).json({
+      error: "ai_auth",
+      message:
+        "The AI provider rejected the API key. In Render, open Environment and set ANTHROPIC_API_KEY to a valid key from console.anthropic.com.",
+    });
+    return;
+  }
+
+  if (status === 403 || lower.includes("credit") || lower.includes("billing")) {
+    res.status(502).json({
+      error: "ai_billing",
+      message:
+        "The AI provider refused the request (billing or permissions). Check your Anthropic account credits and API access.",
+    });
+    return;
+  }
+
+  if (status === 429 || status === 529 || lower.includes("rate limit") || lower.includes("overloaded")) {
+    res.status(503).json({
+      error: "ai_busy",
+      message: "The AI service is busy or rate-limited. Wait a minute and try again.",
+    });
+    return;
+  }
+
+  if (status === 400 && (lower.includes("model") || lower.includes("not_found"))) {
+    res.status(502).json({
+      error: "ai_model",
+      message: `This server could not run the configured model (${model}). Set ANTHROPIC_MODEL in Render to one your key supports (for example claude-3-5-sonnet-20241022).`,
+    });
+    return;
+  }
+
+  res.status(500).json({
+    error: "server_error",
+    message: `${genericUserMessage} If the problem continues, confirm ANTHROPIC_API_KEY and ANTHROPIC_MODEL on the server.`,
+  });
+}
 
 const SYSTEM_PROMPT = `You are an expert ATS (Applicant Tracking System) analyst and executive resume coach with 15+ years of experience in talent acquisition at Fortune 500 companies. Your job is to analyze a candidate's resume against a specific job description and return a structured JSON analysis. Be direct, specific, and actionable. Never be vague. Always return valid JSON — no markdown, no preamble, no code fences.`;
 
@@ -43,7 +114,7 @@ ${jobDescription}`;
 
   try {
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+      model,
       max_tokens: 8192,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userMessage }],
@@ -62,11 +133,11 @@ ${jobDescription}`;
     const result = JSON.parse(jsonText);
     res.json(result);
   } catch (err) {
-    req.log.error({ err }, "Resume analysis failed");
     if (err instanceof SyntaxError) {
+      req.log.error({ err }, "Resume analysis JSON parse failed");
       res.status(500).json({ error: "parse_error", message: "Failed to parse AI response as JSON" });
     } else {
-      res.status(500).json({ error: "server_error", message: "Analysis failed. Please try again." });
+      sendAnthropicRouteError(req, res, err, "Resume analysis failed", "Analysis failed.");
     }
   }
 });
@@ -101,7 +172,7 @@ ${jobDescription}`;
 
   try {
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+      model,
       max_tokens: 2048,
       system: "You are an expert career coach and professional cover letter writer with 15+ years of experience. You write compelling, personalized cover letters that get candidates interviews. Always write in the candidate's voice, never sound generic.",
       messages: [{ role: "user", content: userMessage }],
@@ -117,8 +188,7 @@ ${jobDescription}`;
     const wordCount = coverLetter.split(/\s+/).filter(Boolean).length;
     res.json({ coverLetter, wordCount });
   } catch (err) {
-    req.log.error({ err }, "Cover letter generation failed");
-    res.status(500).json({ error: "server_error", message: "Generation failed. Please try again." });
+    sendAnthropicRouteError(req, res, err, "Cover letter generation failed", "Generation failed.");
   }
 });
 
@@ -158,7 +228,7 @@ ${jobDescription}`;
 
   try {
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+      model,
       max_tokens: 3000,
       system: "You are an expert career coach and skills development strategist. You create actionable, realistic career roadmaps that help candidates bridge skill gaps and land their target roles. Always return valid JSON only.",
       messages: [{ role: "user", content: userMessage }],
@@ -175,11 +245,11 @@ ${jobDescription}`;
     const result = JSON.parse(jsonText);
     res.json(result);
   } catch (err) {
-    req.log.error({ err }, "Career roadmap generation failed");
     if (err instanceof SyntaxError) {
+      req.log.error({ err }, "Career roadmap JSON parse failed");
       res.status(500).json({ error: "parse_error", message: "Failed to parse AI response" });
     } else {
-      res.status(500).json({ error: "server_error", message: "Generation failed. Please try again." });
+      sendAnthropicRouteError(req, res, err, "Career roadmap generation failed", "Generation failed.");
     }
   }
 });
