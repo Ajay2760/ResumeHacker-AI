@@ -431,7 +431,7 @@ export default function Home() {
   const handleDownloadReport = () => {
     if (!analysisResult) return;
     const lines = [
-      `RESUMERANKER AI — ANALYSIS REPORT`,
+      `RESUMEHACKER AI — ANALYSIS REPORT`,
       `=`.repeat(40),
       ``,
       `ATS MATCH SCORE: ${analysisResult.matchScore}/100`,
@@ -463,7 +463,7 @@ export default function Home() {
     const blob = new Blob([lines.join("\n")], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "resumeranker-report.txt"; a.click();
+    a.href = url; a.download = "resumehacker-report.txt"; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -480,7 +480,7 @@ export default function Home() {
               <Award className="w-4 h-4 text-primary-foreground" />
             </div>
             <div>
-              <span className="font-extrabold text-lg tracking-tight">ResumeRanker</span>
+              <span className="font-extrabold text-lg tracking-tight">ResumeHacker</span>
               <span className="font-light text-lg text-primary ml-1">AI</span>
             </div>
           </div>
