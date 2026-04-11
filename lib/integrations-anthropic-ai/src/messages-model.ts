@@ -18,3 +18,15 @@ export function openaiMessagesModel(): string {
   }
   return "gpt-4o-mini";
 }
+
+/**
+ * Groq chat model (free tier at console.groq.com). Higher daily limits on 8B;
+ * override with GROQ_MODEL for e.g. llama-3.3-70b-versatile.
+ */
+export function groqMessagesModel(): string {
+  const fromEnv = process.env.GROQ_MODEL?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+  return "llama-3.1-8b-instant";
+}

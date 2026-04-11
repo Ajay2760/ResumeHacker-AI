@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { AnalyzeResumeBody } from "@workspace/api-zod";
 import {
   anthropicMessagesModel,
+  groqMessagesModel,
   openaiMessagesModel,
   type ResumeLlmBackend,
 } from "@workspace/integrations-anthropic-ai";
@@ -11,6 +12,7 @@ const router = Router();
 
 const anthropicModel = anthropicMessagesModel();
 const openaiModel = openaiMessagesModel();
+const groqModel = groqMessagesModel();
 
 function extractAiHttpDetails(err: unknown): { status?: number; message: string } {
   if (!err || typeof err !== "object") {
@@ -33,6 +35,9 @@ function configHint(backend: ResumeLlmBackend): string {
   if (backend === "openai") {
     return "Confirm OPENAI_API_KEY and OPENAI_MODEL on the server (Render → Environment).";
   }
+  if (backend === "groq") {
+    return "Confirm GROQ_API_KEY and GROQ_MODEL on the server (Render → Environment). Free key: console.groq.com";
+  }
   return "Confirm ANTHROPIC_API_KEY and ANTHROPIC_MODEL on the server (Render → Environment).";
 }
 
@@ -49,12 +54,15 @@ function sendAiRouteError(
   const backend = resumeLlmBackend;
 
   if (status === 401) {
+    const keyMsg =
+      backend === "openai"
+        ? "OpenAI rejected the API key. Set OPENAI_API_KEY (platform.openai.com)."
+        : backend === "groq"
+          ? "Groq rejected the API key. Set GROQ_API_KEY (free: console.groq.com)."
+          : "Anthropic rejected the API key. Set ANTHROPIC_API_KEY (console.anthropic.com).";
     res.status(502).json({
       error: "ai_auth",
-      message:
-        backend === "openai"
-          ? "OpenAI rejected the API key. Set OPENAI_API_KEY in Render → Environment (platform.openai.com)."
-          : "Anthropic rejected the API key. Set ANTHROPIC_API_KEY in Render → Environment (console.anthropic.com).",
+      message: `${keyMsg} In Render: Environment → add the variable → redeploy.`,
     });
     return;
   }
@@ -67,10 +75,10 @@ function sendAiRouteError(
     lower.includes("quota") ||
     lower.includes("insufficient")
   ) {
-    const name = backend === "openai" ? "OpenAI" : "Anthropic";
+    const name = backend === "openai" ? "OpenAI" : backend === "groq" ? "Groq" : "Anthropic";
     res.status(502).json({
       error: "ai_billing",
-      message: `${name} refused the request (billing, quota, or permissions). Add credits or fix account access for that provider — or set AI_PROVIDER=openai with OPENAI_API_KEY to use OpenAI instead of Anthropic.`,
+      message: `${name} refused the request (billing, quota, or permissions). For a free option, use Groq: set GROQ_API_KEY from console.groq.com and AI_PROVIDER=groq (remove or ignore paid keys if needed).`,
     });
     return;
   }
@@ -84,10 +92,11 @@ function sendAiRouteError(
   }
 
   if (status === 400 && (lower.includes("model") || lower.includes("not_found"))) {
-    const modelLabel = backend === "openai" ? openaiModel : anthropicModel;
+    const modelLabel =
+      backend === "openai" ? openaiModel : backend === "groq" ? groqModel : anthropicModel;
     res.status(502).json({
       error: "ai_model",
-      message: `The configured model (${modelLabel}) was rejected. For OpenAI set OPENAI_MODEL (e.g. gpt-4o-mini). For Anthropic set ANTHROPIC_MODEL, or switch provider with AI_PROVIDER=openai and OPENAI_API_KEY.`,
+      message: `The configured model (${modelLabel}) was rejected. Set OPENAI_MODEL, GROQ_MODEL, or ANTHROPIC_MODEL, or use AI_PROVIDER=groq with a free GROQ_API_KEY (see console.groq.com/docs/models).`,
     });
     return;
   }

@@ -3,7 +3,7 @@ type ChatCompletionResponse = {
   error?: { message?: string; code?: string };
 };
 
-function openaiBaseUrl(): string {
+function defaultOpenAiBaseUrl(): string {
   const raw = process.env.OPENAI_BASE_URL?.trim();
   if (!raw) return "https://api.openai.com/v1";
   return raw.replace(/\/+$/, "");
@@ -15,14 +15,23 @@ function makeHttpError(status: number, message: string): Error & { status: numbe
   return e;
 }
 
-export async function openaiChatJson(input: {
+type CompatibleChatInput = {
   apiKey: string;
   model: string;
   system: string;
   user: string;
   maxTokens: number;
-}): Promise<string> {
-  const url = `${openaiBaseUrl()}/chat/completions`;
+  /** OpenAI-compatible root, e.g. https://api.openai.com/v1 or https://api.groq.com/openai/v1 */
+  baseUrl?: string;
+};
+
+function resolveBaseUrl(baseUrl?: string): string {
+  const root = (baseUrl ?? defaultOpenAiBaseUrl()).replace(/\/+$/, "");
+  return root;
+}
+
+export async function openaiChatJson(input: CompatibleChatInput): Promise<string> {
+  const url = `${resolveBaseUrl(input.baseUrl)}/chat/completions`;
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -45,25 +54,19 @@ export async function openaiChatJson(input: {
     const msg =
       typeof body.error?.message === "string" && body.error.message.trim()
         ? body.error.message.trim()
-        : `OpenAI HTTP ${res.status}`;
+        : `Chat API HTTP ${res.status}`;
     throw makeHttpError(res.status, msg);
   }
 
   const text = body.choices?.[0]?.message?.content;
   if (typeof text !== "string" || !text.trim()) {
-    throw makeHttpError(502, "OpenAI returned an empty response");
+    throw makeHttpError(502, "LLM returned an empty response");
   }
   return text;
 }
 
-export async function openaiChatText(input: {
-  apiKey: string;
-  model: string;
-  system: string;
-  user: string;
-  maxTokens: number;
-}): Promise<string> {
-  const url = `${openaiBaseUrl()}/chat/completions`;
+export async function openaiChatText(input: CompatibleChatInput): Promise<string> {
+  const url = `${resolveBaseUrl(input.baseUrl)}/chat/completions`;
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -85,13 +88,13 @@ export async function openaiChatText(input: {
     const msg =
       typeof body.error?.message === "string" && body.error.message.trim()
         ? body.error.message.trim()
-        : `OpenAI HTTP ${res.status}`;
+        : `Chat API HTTP ${res.status}`;
     throw makeHttpError(res.status, msg);
   }
 
   const text = body.choices?.[0]?.message?.content;
   if (typeof text !== "string" || !text.trim()) {
-    throw makeHttpError(502, "OpenAI returned an empty response");
+    throw makeHttpError(502, "LLM returned an empty response");
   }
   return text;
 }
