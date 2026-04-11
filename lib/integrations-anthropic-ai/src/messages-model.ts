@@ -28,5 +28,5 @@ export function groqMessagesModel(): string {
   if (fromEnv) {
     return fromEnv;
   }
-  return "llama-3.1-8b-instant";
+  return "llama3-8b-8192";
 }
