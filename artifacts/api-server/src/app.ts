@@ -65,7 +65,11 @@ app.use("/api", router);
 const frontendDist = resolveFrontendDist();
 if (frontendDist) {
   app.use(express.static(frontendDist));
-  app.get("*", (req, res, next) => {
+  // Express 5 / path-to-regexp v8 rejects `app.get("*", …)` — use middleware for SPA fallback.
+  app.use((req, res, next) => {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      return next();
+    }
     if (req.path.startsWith("/api")) {
       return next();
     }
