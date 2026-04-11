@@ -88,7 +88,7 @@ function sendAiRouteError(
       error: "ai_busy",
       message:
         backend === "groq"
-          ? "Groq rate limit reached (free tier has RPM/RPD caps). Wait a minute or check Limits at console.groq.com — or try GROQ_MODEL=llama3-8b-8192 for higher daily allowance."
+          ? "Groq rate limit reached (free tier has RPM/RPD caps). Wait a minute or check Limits at console.groq.com — or try GROQ_MODEL=llama-3.3-70b-versatile for higher daily allowance."
           : "The AI service is busy or rate-limited. Wait a minute and try again.",
     });
     return;
@@ -105,7 +105,7 @@ function sendAiRouteError(
     const name = backend === "openai" ? "OpenAI" : backend === "groq" ? "Groq" : "Anthropic";
     const hint =
       backend === "groq"
-        ? "Check the key at console.groq.com (API Keys), redeploy after changing env vars, and confirm the key is not restricted. HTTP 403 can also mean the model is not enabled for your account — try GROQ_MODEL=llama3-8b-8192."
+        ? "Check the key at console.groq.com (API Keys), redeploy after changing env vars, and confirm the key is not restricted. HTTP 403 can also mean the model is not enabled for your account — try GROQ_MODEL=llama-3.3-70b-versatile."
         : "For a free option, set GROQ_API_KEY from console.groq.com and AI_PROVIDER=groq.";
     res.status(502).json({
       error: "ai_billing",
@@ -126,7 +126,7 @@ function sendAiRouteError(
       backend === "openai" ? openaiModel : backend === "groq" ? groqModel : anthropicModel;
     res.status(502).json({
       error: "ai_model",
-      message: `The configured model (${modelLabel}) was rejected. For Groq use a current ID from their docs (default: llama3-8b-8192). Set GROQ_MODEL or clear it to use the default.`,
+      message: `The configured model (${modelLabel}) was rejected. For Groq use a current ID from their docs (default: llama-3.3-70b-versatile). Set GROQ_MODEL or clear it to use the default.`,
     });
     return;
   }
