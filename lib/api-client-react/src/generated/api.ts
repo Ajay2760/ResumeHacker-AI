@@ -19,6 +19,9 @@ import type {
 import type {
   AnalysisResult,
   AnalyzeResumeBody,
+  CareerRoadmapBody,
+  CareerRoadmapResult,
+  CoverLetterResult,
   ErrorResponse,
   HealthStatus,
 } from "./api.schemas";
@@ -107,6 +110,180 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Uses AI to generate a personalized cover letter based on the resume and job description
+ * @summary Generate a tailored cover letter
+ */
+export const getGenerateCoverLetterUrl = () => {
+  return `/api/resume/cover-letter`;
+};
+
+export const generateCoverLetter = async (
+  analyzeResumeBody: AnalyzeResumeBody,
+  options?: RequestInit,
+): Promise<CoverLetterResult> => {
+  return customFetch<CoverLetterResult>(getGenerateCoverLetterUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(analyzeResumeBody),
+  });
+};
+
+export const getGenerateCoverLetterMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateCoverLetter>>,
+    TError,
+    { data: BodyType<AnalyzeResumeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateCoverLetter>>,
+  TError,
+  { data: BodyType<AnalyzeResumeBody> },
+  TContext
+> => {
+  const mutationKey = ["generateCoverLetter"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateCoverLetter>>,
+    { data: BodyType<AnalyzeResumeBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateCoverLetter(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateCoverLetterMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateCoverLetter>>
+>;
+export type GenerateCoverLetterMutationBody = BodyType<AnalyzeResumeBody>;
+export type GenerateCoverLetterMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Generate a tailored cover letter
+ */
+export const useGenerateCoverLetter = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateCoverLetter>>,
+    TError,
+    { data: BodyType<AnalyzeResumeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateCoverLetter>>,
+  TError,
+  { data: BodyType<AnalyzeResumeBody> },
+  TContext
+> => {
+  return useMutation(getGenerateCoverLetterMutationOptions(options));
+};
+
+/**
+ * Uses AI to create a phased career roadmap based on skill gaps and the target role
+ * @summary Generate a career roadmap
+ */
+export const getGenerateCareerRoadmapUrl = () => {
+  return `/api/resume/career-roadmap`;
+};
+
+export const generateCareerRoadmap = async (
+  careerRoadmapBody: CareerRoadmapBody,
+  options?: RequestInit,
+): Promise<CareerRoadmapResult> => {
+  return customFetch<CareerRoadmapResult>(getGenerateCareerRoadmapUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(careerRoadmapBody),
+  });
+};
+
+export const getGenerateCareerRoadmapMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateCareerRoadmap>>,
+    TError,
+    { data: BodyType<CareerRoadmapBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateCareerRoadmap>>,
+  TError,
+  { data: BodyType<CareerRoadmapBody> },
+  TContext
+> => {
+  const mutationKey = ["generateCareerRoadmap"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateCareerRoadmap>>,
+    { data: BodyType<CareerRoadmapBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateCareerRoadmap(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateCareerRoadmapMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateCareerRoadmap>>
+>;
+export type GenerateCareerRoadmapMutationBody = BodyType<CareerRoadmapBody>;
+export type GenerateCareerRoadmapMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Generate a career roadmap
+ */
+export const useGenerateCareerRoadmap = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateCareerRoadmap>>,
+    TError,
+    { data: BodyType<CareerRoadmapBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateCareerRoadmap>>,
+  TError,
+  { data: BodyType<CareerRoadmapBody> },
+  TContext
+> => {
+  return useMutation(getGenerateCareerRoadmapMutationOptions(options));
+};
 
 /**
  * Uses AI to analyze a resume against a job description and returns a structured report

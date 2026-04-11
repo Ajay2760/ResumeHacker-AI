@@ -26,6 +26,68 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /resume/cover-letter:
+    post:
+      operationId: generateCoverLetter
+      tags: [resume]
+      summary: Generate a tailored cover letter
+      description: Uses AI to generate a personalized cover letter based on the resume and job description
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeResumeBody"
+      responses:
+        "200":
+          description: Cover letter generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoverLetterResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /resume/career-roadmap:
+    post:
+      operationId: generateCareerRoadmap
+      tags: [resume]
+      summary: Generate a career roadmap
+      description: Uses AI to create a phased career roadmap based on skill gaps and the target role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareerRoadmapBody"
+      responses:
+        "200":
+          description: Career roadmap generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerRoadmapResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /resume/analyze:
     post:
       operationId: analyzeResume
@@ -150,6 +212,76 @@ components:
         - weakBullets
         - redFlags
         - summary
+    CoverLetterResult:
+      type: object
+      properties:
+        coverLetter:
+          type: string
+          description: The generated cover letter text
+        wordCount:
+          type: number
+      required:
+        - coverLetter
+        - wordCount
+    CareerRoadmapBody:
+      type: object
+      properties:
+        resumeText:
+          type: string
+        jobDescription:
+          type: string
+        missingKeywords:
+          type: array
+          items:
+            type: string
+        matchScore:
+          type: number
+      required:
+        - resumeText
+        - jobDescription
+        - missingKeywords
+        - matchScore
+    RoadmapPhase:
+      type: object
+      properties:
+        phase:
+          type: string
+        duration:
+          type: string
+        goal:
+          type: string
+        tasks:
+          type: array
+          items:
+            type: string
+        resources:
+          type: array
+          items:
+            type: string
+      required:
+        - phase
+        - duration
+        - goal
+        - tasks
+        - resources
+    CareerRoadmapResult:
+      type: object
+      properties:
+        targetRole:
+          type: string
+        summary:
+          type: string
+        phases:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoadmapPhase"
+        estimatedTimeToReady:
+          type: string
+      required:
+        - targetRole
+        - summary
+        - phases
+        - estimatedTimeToReady
     ErrorResponse:
       type: object
       properties:

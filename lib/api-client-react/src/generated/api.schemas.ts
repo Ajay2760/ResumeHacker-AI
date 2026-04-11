@@ -56,6 +56,34 @@ export interface AnalysisResult {
   summary: AnalysisSummary;
 }
 
+export interface CoverLetterResult {
+  /** The generated cover letter text */
+  coverLetter: string;
+  wordCount: number;
+}
+
+export interface CareerRoadmapBody {
+  resumeText: string;
+  jobDescription: string;
+  missingKeywords: string[];
+  matchScore: number;
+}
+
+export interface RoadmapPhase {
+  phase: string;
+  duration: string;
+  goal: string;
+  tasks: string[];
+  resources: string[];
+}
+
+export interface CareerRoadmapResult {
+  targetRole: string;
+  summary: string;
+  phases: RoadmapPhase[];
+  estimatedTimeToReady: string;
+}
+
 export interface ErrorResponse {
   error: string;
   message: string;

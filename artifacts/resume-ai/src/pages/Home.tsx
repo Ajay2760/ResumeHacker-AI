@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { useAnalyzeResume } from "@workspace/api-client-react";
+import { useAnalyzeResume, useGenerateCoverLetter, useGenerateCareerRoadmap } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { extractTextFromPDF } from "@/lib/pdf";
 import {
   Loader2, UploadCloud, X, AlertTriangle, FileText,
   ChevronRight, Check, Copy, Sun, Moon, Download,
   Target, Zap, Shield, TrendingUp, ArrowLeft, Sparkles,
-  BookOpen, Award, Star
+  BookOpen, Award, Star, Mail, Map, FileDown, RotateCw,
+  ChevronDown, ExternalLink, Clock, Flag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,10 +54,8 @@ function ScoreGauge({ score }: { score: number }) {
     return () => { clearTimeout(delay); if (animRef.current) clearTimeout(animRef.current); };
   }, [score]);
 
-  // Gauge geometry — semi-circle, 240° arc
   const cx = 160, cy = 155, r = 120;
-  const startAngle = 210, endAngle = 330; // degrees, full sweep = 300°
-  const sweep = 300;
+  const startAngle = 210, sweep = 300;
   const toRad = (d: number) => (d * Math.PI) / 180;
   const arc = (angle: number) => ({
     x: cx + r * Math.cos(toRad(angle)),
@@ -72,19 +71,16 @@ function ScoreGauge({ score }: { score: number }) {
   const progressAngle = startAngle + (score / 100) * sweep;
   const circumference = (sweep / 360) * 2 * Math.PI * r;
   const trackLen = circumference;
-
-  // Tick marks
   const ticks = [0, 25, 50, 75, 100];
-
-  // Grade
   const grade = score >= 90 ? "A+" : score >= 80 ? "A" : score >= 70 ? "B" : score >= 60 ? "C" : score >= 40 ? "D" : "F";
 
-  // Colors
   const { strokeColor, glowColor, label, badgeCls } =
     score >= 90 ? { strokeColor: "#16a34a", glowColor: "#16a34a40", label: "Excellent Match", badgeCls: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" } :
     score >= 71 ? { strokeColor: "#2563eb", glowColor: "#2563eb40", label: "Good Match", badgeCls: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" } :
     score >= 41 ? { strokeColor: "#d97706", glowColor: "#d9770640", label: "Needs Work", badgeCls: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300" } :
     { strokeColor: "#dc2626", glowColor: "#dc262640", label: "Poor Match", badgeCls: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" };
+
+  void glowColor;
 
   return (
     <div className="flex flex-col items-center" data-testid="score-gauge">
@@ -95,25 +91,8 @@ function ScoreGauge({ score }: { score: number }) {
               <feGaussianBlur stdDeviation="6" result="coloredBlur" />
               <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
             </filter>
-            <linearGradient id="trackGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="#dc2626" />
-              <stop offset="40%"  stopColor="#d97706" />
-              <stop offset="70%"  stopColor="#2563eb" />
-              <stop offset="100%" stopColor="#16a34a" />
-            </linearGradient>
           </defs>
-
-          {/* Track background */}
-          <path
-            d={describeArc(startAngle, startAngle + sweep)}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="18"
-            strokeLinecap="round"
-            className="text-muted/40"
-          />
-
-          {/* Colored progress arc */}
+          <path d={describeArc(startAngle, startAngle + sweep)} fill="none" stroke="currentColor" strokeWidth="18" strokeLinecap="round" className="text-muted/40" />
           {score > 0 && (
             <path
               d={describeArc(startAngle, progressAngle)}
@@ -131,49 +110,22 @@ function ScoreGauge({ score }: { score: number }) {
               }}
             />
           )}
-
-          {/* Tick marks */}
           {ticks.map((t) => {
             const a = startAngle + (t / 100) * sweep;
             const inner = { x: cx + (r - 16) * Math.cos(toRad(a)), y: cy + (r - 16) * Math.sin(toRad(a)) };
-            const outer = { x: cx + (r + 2) * Math.cos(toRad(a)),  y: cy + (r + 2) * Math.sin(toRad(a)) };
-            return (
-              <line key={t}
-                x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y}
-                stroke="currentColor" strokeWidth="2" className="text-border" />
-            );
+            const outer = { x: cx + (r + 2) * Math.cos(toRad(a)), y: cy + (r + 2) * Math.sin(toRad(a)) };
+            return <line key={t} x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y} stroke="currentColor" strokeWidth="2" className="text-border" />;
           })}
-
-          {/* Tick labels */}
           {ticks.map((t) => {
             const a = startAngle + (t / 100) * sweep;
             const lp = { x: cx + (r + 22) * Math.cos(toRad(a)), y: cy + (r + 22) * Math.sin(toRad(a)) };
-            return (
-              <text key={t} x={lp.x} y={lp.y}
-                textAnchor="middle" dominantBaseline="middle"
-                fontSize="11" fill="currentColor" className="text-muted-foreground" opacity="0.7">
-                {t}
-              </text>
-            );
+            return <text key={t} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fontSize="11" fill="currentColor" className="text-muted-foreground" opacity="0.7">{t}</text>;
           })}
-
-          {/* Center score */}
-          <text x={cx} y={cy - 18} textAnchor="middle" fontSize="56" fontWeight="800"
-            fill={strokeColor} fontFamily="Inter, sans-serif" className="score-appear">
-            {displayed}
-          </text>
-          <text x={cx} y={cy + 20} textAnchor="middle" fontSize="15" fill="currentColor"
-            className="text-muted-foreground" fontFamily="Inter, sans-serif" opacity="0.7">
-            out of 100
-          </text>
-          <text x={cx} y={cy + 44} textAnchor="middle" fontSize="22" fontWeight="700"
-            fill={strokeColor} fontFamily="Inter, sans-serif">
-            {grade}
-          </text>
+          <text x={cx} y={cy - 18} textAnchor="middle" fontSize="56" fontWeight="800" fill={strokeColor} fontFamily="Inter, sans-serif" className="score-appear">{displayed}</text>
+          <text x={cx} y={cy + 20} textAnchor="middle" fontSize="15" fill="currentColor" className="text-muted-foreground" fontFamily="Inter, sans-serif" opacity="0.7">out of 100</text>
+          <text x={cx} y={cy + 44} textAnchor="middle" fontSize="22" fontWeight="700" fill={strokeColor} fontFamily="Inter, sans-serif">{grade}</text>
         </svg>
       </div>
-
-      {/* Label badge */}
       <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold ${badgeCls}`}>
         {score >= 90 && <Star className="w-3.5 h-3.5" />}
         {label}
@@ -189,15 +141,13 @@ function ScoreBreakdown({ score, matched, missing }: { score: number; matched: n
   const impactPct = Math.min(100, Math.round(score * 0.9 + 10));
   const fitPct = Math.min(100, Math.round(score * 1.05));
 
-  const metrics = [
-    { label: "Keyword Coverage", value: keywordPct, icon: <Target className="w-4 h-4" />, color: "bg-blue-500" },
-    { label: "Overall Fit",      value: fitPct,     icon: <Zap    className="w-4 h-4" />, color: "bg-violet-500" },
-    { label: "Impact Score",     value: impactPct,  icon: <TrendingUp className="w-4 h-4" />, color: "bg-emerald-500" },
-  ];
-
   return (
     <div className="grid grid-cols-3 gap-3 mt-6">
-      {metrics.map((m) => (
+      {[
+        { label: "Keyword Coverage", value: keywordPct, icon: <Target className="w-4 h-4" />, color: "bg-blue-500" },
+        { label: "Overall Fit",      value: fitPct,     icon: <Zap    className="w-4 h-4" />, color: "bg-violet-500" },
+        { label: "Impact Score",     value: impactPct,  icon: <TrendingUp className="w-4 h-4" />, color: "bg-emerald-500" },
+      ].map((m) => (
         <div key={m.label} className="bg-muted/50 rounded-xl p-3 text-center space-y-2">
           <div className="flex justify-center text-muted-foreground">{m.icon}</div>
           <div className="text-lg font-bold">{m.value}%</div>
@@ -230,9 +180,7 @@ function QuickTips({ missing, score }: { missing: string[]; score: number }) {
         <ul className="space-y-2">
           {tips.slice(0, 4).map((tip, i) => (
             <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold mt-0.5">
-                {i + 1}
-              </span>
+              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold mt-0.5">{i + 1}</span>
               {tip}
             </li>
           ))}
@@ -245,14 +193,9 @@ function QuickTips({ missing, score }: { missing: string[]; score: number }) {
 // ─── Copy Button ─────────────────────────────────────────────────────────────
 function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
   return (
     <button
-      onClick={handleCopy}
+      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
       className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all
         ${copied
           ? "bg-green-50 border-green-200 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300"
@@ -291,6 +234,71 @@ function LoadingSkeleton() {
   );
 }
 
+// ─── Download helpers ─────────────────────────────────────────────────────────
+async function downloadAsPDF(text: string, filename: string, title: string) {
+  const { default: jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const margin = 20;
+  const pageWidth = 210 - margin * 2;
+  const lineHeight = 6;
+  let y = margin;
+
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text(title, margin, y);
+  y += 10;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+
+  const lines = text.split("\n");
+  for (const line of lines) {
+    const wrapped = doc.splitTextToSize(line || " ", pageWidth);
+    for (const wl of wrapped) {
+      if (y > 277) { doc.addPage(); y = margin; }
+      doc.text(wl, margin, y);
+      y += lineHeight;
+    }
+  }
+
+  doc.save(filename);
+}
+
+async function downloadAsDOCX(text: string, filename: string, title: string) {
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import("docx");
+
+  const paragraphs = [];
+
+  paragraphs.push(
+    new Paragraph({
+      text: title,
+      heading: HeadingLevel.HEADING_1,
+    })
+  );
+
+  paragraphs.push(new Paragraph({ text: "" }));
+
+  for (const line of text.split("\n")) {
+    paragraphs.push(
+      new Paragraph({
+        children: [new TextRun({ text: line || "" })],
+      })
+    );
+  }
+
+  const doc = new Document({
+    sections: [{ properties: {}, children: paragraphs }],
+  });
+
+  const blob = await Packer.toBlob(doc);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Home() {
   const [jobDescription, setJobDescription] = useState("");
@@ -300,8 +308,14 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [coverLetter, setCoverLetter] = useState<string | null>(null);
+  const [roadmap, setRoadmap] = useState<any | null>(null);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
+  const [downloadingDOCX, setDownloadingDOCX] = useState(false);
 
   const analyzeMutation = useAnalyzeResume();
+  const coverLetterMutation = useGenerateCoverLetter();
+  const roadmapMutation = useGenerateCareerRoadmap();
   const { toast } = useToast();
   const { theme, toggle: toggleTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -338,6 +352,8 @@ export default function Home() {
     analyzeMutation.mutate({ data: { jobDescription: jobDescription.trim(), resumeText: resumeText.trim() } }, {
       onSuccess: (result) => {
         setAnalysisResult(result);
+        setCoverLetter(null);
+        setRoadmap(null);
         toast({ title: "Analysis complete", description: "Your resume has been ranked successfully." });
         setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
       },
@@ -345,6 +361,63 @@ export default function Home() {
         toast({ title: "Analysis failed", description: err.message || "Something went wrong.", variant: "destructive" });
       }
     });
+  };
+
+  const handleGenerateCoverLetter = () => {
+    coverLetterMutation.mutate(
+      { data: { jobDescription: jobDescription.trim(), resumeText: resumeText.trim() } },
+      {
+        onSuccess: (result: any) => {
+          setCoverLetter(result.coverLetter);
+          toast({ title: "Cover letter ready!", description: "Your personalized cover letter has been generated." });
+        },
+        onError: (err: any) => {
+          toast({ title: "Generation failed", description: err.message || "Something went wrong.", variant: "destructive" });
+        }
+      }
+    );
+  };
+
+  const handleGenerateRoadmap = () => {
+    roadmapMutation.mutate(
+      {
+        data: {
+          jobDescription: jobDescription.trim(),
+          resumeText: resumeText.trim(),
+          missingKeywords: analysisResult?.missingKeywords || [],
+          matchScore: analysisResult?.matchScore || 0,
+        }
+      },
+      {
+        onSuccess: (result: any) => {
+          setRoadmap(result);
+          toast({ title: "Career roadmap ready!", description: "Your personalized roadmap has been created." });
+        },
+        onError: (err: any) => {
+          toast({ title: "Generation failed", description: err.message || "Something went wrong.", variant: "destructive" });
+        }
+      }
+    );
+  };
+
+  const handleDownloadResumePDF = async () => {
+    if (!resumeText) return;
+    setDownloadingPDF(true);
+    try {
+      await downloadAsPDF(resumeText, "resume.pdf", "Resume");
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
+  const handleDownloadResumeDOCX = async () => {
+    if (!resumeText) return;
+    setDownloadingDOCX(true);
+    try {
+      await downloadAsDOCX(resumeText, "resume.docx", "Resume");
+    } finally {
+      setDownloadingDOCX(false);
+    }
   };
 
   const handleCopyAll = () => {
@@ -355,7 +428,7 @@ export default function Home() {
     setTimeout(() => setCopiedAll(false), 2000);
   };
 
-  const handleDownload = () => {
+  const handleDownloadReport = () => {
     if (!analysisResult) return;
     const lines = [
       `RESUMERANKER AI — ANALYSIS REPORT`,
@@ -384,6 +457,8 @@ export default function Home() {
       `Improvements: ${analysisResult.summary?.priorityImprovements}`,
       `Recommendation: ${analysisResult.summary?.finalRecommendation}`,
       `Confidence: ${analysisResult.summary?.confidenceLevel}`,
+      ``,
+      ...(coverLetter ? [`COVER LETTER:`, ``, coverLetter, ``] : []),
     ];
     const blob = new Blob([lines.join("\n")], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -414,7 +489,6 @@ export default function Home() {
             <button
               onClick={toggleTheme}
               className="w-9 h-9 rounded-xl border border-border bg-background flex items-center justify-center hover:bg-muted transition-colors"
-              data-testid="button-theme-toggle"
               aria-label="Toggle theme"
             >
               {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -442,13 +516,14 @@ export default function Home() {
               </p>
             </div>
 
-            {/* 3 benefit pills */}
             <div className="flex flex-wrap justify-center gap-2">
               {[
                 { icon: <Target className="w-3.5 h-3.5" />, text: "ATS Score" },
                 { icon: <Zap    className="w-3.5 h-3.5" />, text: "Keyword Gap Analysis" },
                 { icon: <Shield className="w-3.5 h-3.5" />, text: "Recruiter Red Flags" },
                 { icon: <BookOpen className="w-3.5 h-3.5" />, text: "Bullet Rewrites" },
+                { icon: <Mail   className="w-3.5 h-3.5" />, text: "Cover Letter" },
+                { icon: <Map    className="w-3.5 h-3.5" />, text: "Career Roadmap" },
               ].map(({ icon, text }) => (
                 <span key={text} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                   {icon}{text}
@@ -464,12 +539,10 @@ export default function Home() {
                   Paste the job description
                 </label>
                 <Textarea
-                  id="job-description"
                   placeholder="Copy the full job posting here — the more detail, the better."
                   className="min-h-[280px] resize-y bg-card border-border focus-visible:ring-primary text-sm"
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
-                  data-testid="input-job-description"
                 />
                 {jobDescription.length > 0 && (
                   <p className="text-xs text-muted-foreground text-right">{jobDescription.length.toLocaleString()} characters</p>
@@ -486,7 +559,6 @@ export default function Home() {
                   <button
                     onClick={() => setIsPasting(!isPasting)}
                     className="text-xs text-primary hover:underline font-medium"
-                    data-testid="button-toggle-paste"
                   >
                     {isPasting ? "Upload a file instead" : "Or paste your text"}
                   </button>
@@ -500,7 +572,6 @@ export default function Home() {
                     onDragLeave={() => setIsDragging(false)}
                     onDrop={(e) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); }}
                     onClick={() => !fileName && fileInputRef.current?.click()}
-                    data-testid="dropzone-resume"
                   >
                     {fileName ? (
                       <div className="flex flex-col items-center text-center gap-3">
@@ -513,9 +584,30 @@ export default function Home() {
                             {resumeText.length.toLocaleString()} chars · ~{wordCount} words · ~{estimatedPages} page{estimatedPages !== 1 ? "s" : ""}
                           </p>
                         </div>
-                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setFileName(null); setResumeText(""); }} data-testid="button-remove-file">
-                          <X className="w-3.5 h-3.5 mr-1.5" /> Remove
-                        </Button>
+                        {/* Download Resume Buttons */}
+                        <div className="flex gap-2 flex-wrap justify-center">
+                          <Button
+                            variant="outline" size="sm"
+                            onClick={(e) => { e.stopPropagation(); handleDownloadResumePDF(); }}
+                            disabled={downloadingPDF}
+                            className="gap-1.5 text-xs"
+                          >
+                            {downloadingPDF ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
+                            PDF
+                          </Button>
+                          <Button
+                            variant="outline" size="sm"
+                            onClick={(e) => { e.stopPropagation(); handleDownloadResumeDOCX(); }}
+                            disabled={downloadingDOCX}
+                            className="gap-1.5 text-xs"
+                          >
+                            {downloadingDOCX ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
+                            DOCX
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setFileName(null); setResumeText(""); }} className="gap-1.5 text-xs">
+                            <X className="w-3 h-3" /> Remove
+                          </Button>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center text-center gap-3 pointer-events-none">
@@ -532,18 +624,41 @@ export default function Home() {
                       onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
                   </div>
                 ) : (
-                  <Textarea
-                    placeholder="Paste your full resume text here..."
-                    className="min-h-[280px] resize-y bg-card border-border focus-visible:ring-primary text-sm"
-                    value={resumeText}
-                    onChange={(e) => setResumeText(e.target.value)}
-                    data-testid="input-resume-text"
-                  />
-                )}
-                {isPasting && resumeText.length > 0 && (
-                  <p className="text-xs text-muted-foreground text-right">
-                    {resumeText.length.toLocaleString()} chars · ~{wordCount} words · ~{estimatedPages}p
-                  </p>
+                  <div className="space-y-2">
+                    <Textarea
+                      placeholder="Paste your full resume text here..."
+                      className="min-h-[280px] resize-y bg-card border-border focus-visible:ring-primary text-sm"
+                      value={resumeText}
+                      onChange={(e) => setResumeText(e.target.value)}
+                    />
+                    {resumeText.length > 0 && (
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">
+                          {resumeText.length.toLocaleString()} chars · ~{wordCount} words · ~{estimatedPages}p
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline" size="sm"
+                            onClick={handleDownloadResumePDF}
+                            disabled={downloadingPDF}
+                            className="gap-1.5 text-xs"
+                          >
+                            {downloadingPDF ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
+                            PDF
+                          </Button>
+                          <Button
+                            variant="outline" size="sm"
+                            onClick={handleDownloadResumeDOCX}
+                            disabled={downloadingDOCX}
+                            className="gap-1.5 text-xs"
+                          >
+                            {downloadingDOCX ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
+                            DOCX
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -554,7 +669,6 @@ export default function Home() {
                 className="h-13 px-10 text-base font-semibold rounded-2xl shadow-lg shadow-primary/25 gap-2"
                 onClick={handleAnalyze}
                 disabled={!jobDescription.trim() || !resumeText.trim()}
-                data-testid="button-analyze"
               >
                 Rank My Resume
                 <ChevronRight className="w-5 h-5" />
@@ -571,17 +685,17 @@ export default function Home() {
           <div ref={resultsRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Top bar */}
             <div className="flex items-center justify-between">
-              <Button variant="ghost" size="sm" onClick={() => setAnalysisResult(null)} className="gap-2" data-testid="button-back">
+              <Button variant="ghost" size="sm" onClick={() => setAnalysisResult(null)} className="gap-2">
                 <ArrowLeft className="w-4 h-4" />
                 New analysis
               </Button>
-              <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2" data-testid="button-download">
+              <Button variant="outline" size="sm" onClick={handleDownloadReport} className="gap-2">
                 <Download className="w-4 h-4" />
                 Download report
               </Button>
             </div>
 
-            {/* ── COMPONENT 1: Score Card ── */}
+            {/* ── Score Card ── */}
             <Card className="overflow-hidden border-border shadow-lg">
               <div className="relative bg-gradient-to-br from-card to-muted/30 p-8">
                 <div className="absolute top-4 right-4">
@@ -617,18 +731,13 @@ export default function Home() {
             {/* ── Quick Tips ── */}
             <QuickTips missing={analysisResult.missingKeywords || []} score={analysisResult.matchScore} />
 
-            {/* ── COMPONENT 2: Keywords ── */}
+            {/* ── Keywords ── */}
             <div className="grid md:grid-cols-2 gap-4">
               <Card className="border-green-200/60 dark:border-green-800/40 shadow-sm">
                 <CardHeader className="pb-3 pt-4 px-5">
                   <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-600" />
-                      Keywords You Have
-                    </span>
-                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 hover:bg-green-100 text-xs font-semibold">
-                      {analysisResult.matchedKeywords?.length || 0}
-                    </Badge>
+                    <span className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" />Keywords You Have</span>
+                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 hover:bg-green-100 text-xs font-semibold">{analysisResult.matchedKeywords?.length || 0}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-5 pb-5">
@@ -647,13 +756,8 @@ export default function Home() {
               <Card className="border-red-200/60 dark:border-red-800/40 shadow-sm">
                 <CardHeader className="pb-3 pt-4 px-5">
                   <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <X className="w-4 h-4 text-red-500" />
-                      Missing Keywords
-                    </span>
-                    <Badge className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-100 text-xs font-semibold">
-                      {analysisResult.missingKeywords?.length || 0}
-                    </Badge>
+                    <span className="flex items-center gap-2"><X className="w-4 h-4 text-red-500" />Missing Keywords</span>
+                    <Badge className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-100 text-xs font-semibold">{analysisResult.missingKeywords?.length || 0}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-5 pb-5">
@@ -674,7 +778,7 @@ export default function Home() {
               </Card>
             </div>
 
-            {/* ── COMPONENT 3: Bullet Rewrites ── */}
+            {/* ── Bullet Rewrites ── */}
             {analysisResult.weakBullets?.length > 0 && (
               <Card className="border-border shadow-sm overflow-hidden">
                 <CardHeader className="bg-muted/40 border-b border-border px-6 py-4">
@@ -692,7 +796,6 @@ export default function Home() {
                       onClick={handleCopyAll}
                       className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all
                         ${copiedAll ? "bg-green-50 border-green-200 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300" : "border-border hover:border-primary hover:text-primary"}`}
-                      data-testid="button-copy-all"
                     >
                       {copiedAll ? <><Check className="w-3.5 h-3.5" /> Copied all</> : <><Copy className="w-3.5 h-3.5" /> Copy all</>}
                     </button>
@@ -704,9 +807,7 @@ export default function Home() {
                       <AccordionItem key={i} value={`bullet-${i}`} className="border-b last:border-0">
                         <AccordionTrigger className="hover:no-underline px-6 py-4 text-left">
                           <div className="flex items-center gap-3 pr-4">
-                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">
-                              {i + 1}
-                            </span>
+                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">{i + 1}</span>
                             <span className="text-sm text-muted-foreground line-clamp-1 flex-1">{bullet.original}</span>
                           </div>
                         </AccordionTrigger>
@@ -732,16 +833,14 @@ export default function Home() {
               </Card>
             )}
 
-            {/* ── COMPONENT 4: Red Flags ── */}
+            {/* ── Red Flags ── */}
             {analysisResult.redFlags?.length > 0 && (
               <Card className="border-amber-200/70 dark:border-amber-700/40 shadow-sm">
                 <CardHeader className="pb-3 px-6 pt-5">
                   <CardTitle className="text-base flex items-center gap-2 text-amber-900 dark:text-amber-300">
                     <AlertTriangle className="w-4 h-4 text-amber-500" />
                     Recruiter Red Flags
-                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 hover:bg-amber-100 ml-auto text-xs">
-                      {analysisResult.redFlags.length}
-                    </Badge>
+                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 hover:bg-amber-100 ml-auto text-xs">{analysisResult.redFlags.length}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-6 pb-5">
@@ -762,7 +861,7 @@ export default function Home() {
               </Card>
             )}
 
-            {/* ── COMPONENT 5: AI Summary ── */}
+            {/* ── AI Summary ── */}
             {analysisResult.summary && (
               <Card className="border-border shadow-sm overflow-hidden">
                 <div className="h-1 w-full bg-gradient-to-r from-primary via-violet-500 to-emerald-500" />
@@ -780,18 +879,16 @@ export default function Home() {
                           : analysisResult.summary.confidenceLevel === "Medium"
                           ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
                           : "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300"
-                      }>
-                        {analysisResult.summary.confidenceLevel}
-                      </Badge>
+                      }>{analysisResult.summary.confidenceLevel}</Badge>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="px-6 pb-6">
                   <div className="space-y-5">
                     {[
-                      { title: "Overall Impression", content: analysisResult.summary.overallImpression },
-                      { title: "Key Strengths",      content: analysisResult.summary.keyStrengths },
-                      { title: "Priority Improvements", content: analysisResult.summary.priorityImprovements },
+                      { title: "Overall Impression",     content: analysisResult.summary.overallImpression },
+                      { title: "Key Strengths",          content: analysisResult.summary.keyStrengths },
+                      { title: "Priority Improvements",  content: analysisResult.summary.priorityImprovements },
                     ].map(({ title, content }) => (
                       <div key={title}>
                         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">{title}</h4>
@@ -807,12 +904,267 @@ export default function Home() {
               </Card>
             )}
 
+            {/* ── Cover Letter Generator ── */}
+            <Card className="border-indigo-200/60 dark:border-indigo-800/40 shadow-sm overflow-hidden">
+              <div className="h-1 w-full bg-gradient-to-r from-indigo-500 to-violet-500" />
+              <CardHeader className="px-6 pt-5 pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-indigo-500" />
+                      Cover Letter Generator
+                    </CardTitle>
+                    <CardDescription className="text-xs mt-0.5">
+                      AI writes a tailored cover letter matching this specific role
+                    </CardDescription>
+                  </div>
+                  {!coverLetter ? (
+                    <Button
+                      onClick={handleGenerateCoverLetter}
+                      disabled={coverLetterMutation.isPending}
+                      size="sm"
+                      className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                    >
+                      {coverLetterMutation.isPending
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Writing...</>
+                        : <><Sparkles className="w-3.5 h-3.5" /> Generate</>}
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <CopyButton text={coverLetter} label="Copy" />
+                      <Button
+                        variant="outline" size="sm"
+                        onClick={handleGenerateCoverLetter}
+                        disabled={coverLetterMutation.isPending}
+                        className="gap-1.5 text-xs"
+                      >
+                        {coverLetterMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCw className="w-3 h-3" />}
+                        Regenerate
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+
+              {coverLetterMutation.isPending && !coverLetter && (
+                <CardContent className="px-6 pb-6">
+                  <div className="space-y-2">
+                    {[80, 95, 70, 88, 60, 75].map((w, i) => (
+                      <Skeleton key={i} className="h-4 rounded" style={{ width: `${w}%` }} />
+                    ))}
+                  </div>
+                </CardContent>
+              )}
+
+              {coverLetter && (
+                <CardContent className="px-6 pb-6">
+                  <div className="bg-muted/30 border border-border rounded-xl p-5">
+                    <pre className="text-sm leading-relaxed whitespace-pre-wrap font-sans text-foreground/90">{coverLetter}</pre>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      variant="outline" size="sm"
+                      onClick={async () => {
+                        setDownloadingPDF(true);
+                        try { await downloadAsPDF(coverLetter, "cover-letter.pdf", "Cover Letter"); }
+                        finally { setDownloadingPDF(false); }
+                      }}
+                      disabled={downloadingPDF}
+                      className="gap-1.5 text-xs"
+                    >
+                      {downloadingPDF ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
+                      Download PDF
+                    </Button>
+                    <Button
+                      variant="outline" size="sm"
+                      onClick={async () => {
+                        setDownloadingDOCX(true);
+                        try { await downloadAsDOCX(coverLetter, "cover-letter.docx", "Cover Letter"); }
+                        finally { setDownloadingDOCX(false); }
+                      }}
+                      disabled={downloadingDOCX}
+                      className="gap-1.5 text-xs"
+                    >
+                      {downloadingDOCX ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
+                      Download DOCX
+                    </Button>
+                  </div>
+                </CardContent>
+              )}
+
+              {!coverLetter && !coverLetterMutation.isPending && (
+                <CardContent className="px-6 pb-6">
+                  <div className="border border-dashed border-indigo-200 dark:border-indigo-700/40 rounded-xl p-6 text-center">
+                    <Mail className="w-8 h-8 text-indigo-300 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Click Generate to create a personalized cover letter for this role.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Takes about 15–20 seconds.</p>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+
+            {/* ── Career Roadmap Generator ── */}
+            <Card className="border-emerald-200/60 dark:border-emerald-800/40 shadow-sm overflow-hidden">
+              <div className="h-1 w-full bg-gradient-to-r from-emerald-500 to-teal-500" />
+              <CardHeader className="px-6 pt-5 pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Map className="w-4 h-4 text-emerald-500" />
+                      Career Roadmap
+                    </CardTitle>
+                    <CardDescription className="text-xs mt-0.5">
+                      Personalized plan to close skill gaps and land this role
+                    </CardDescription>
+                  </div>
+                  {!roadmap ? (
+                    <Button
+                      onClick={handleGenerateRoadmap}
+                      disabled={roadmapMutation.isPending}
+                      size="sm"
+                      className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      {roadmapMutation.isPending
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Planning...</>
+                        : <><Map className="w-3.5 h-3.5" /> Generate</>}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline" size="sm"
+                      onClick={handleGenerateRoadmap}
+                      disabled={roadmapMutation.isPending}
+                      className="gap-1.5 text-xs"
+                    >
+                      {roadmapMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCw className="w-3 h-3" />}
+                      Regenerate
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+
+              {roadmapMutation.isPending && !roadmap && (
+                <CardContent className="px-6 pb-6 space-y-3">
+                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+                </CardContent>
+              )}
+
+              {roadmap && (
+                <CardContent className="px-6 pb-6 space-y-4">
+                  {/* Roadmap header */}
+                  <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200/60 dark:border-emerald-700/40 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-bold text-sm text-emerald-900 dark:text-emerald-200">{roadmap.targetRole}</h3>
+                      <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-800/40 text-emerald-800 dark:text-emerald-300">
+                        <Clock className="w-3 h-3" />
+                        {roadmap.estimatedTimeToReady}
+                      </span>
+                    </div>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400 leading-relaxed">{roadmap.summary}</p>
+                  </div>
+
+                  {/* Phases */}
+                  <div className="space-y-3">
+                    {roadmap.phases?.map((phase: any, i: number) => (
+                      <div key={i} className="border border-border rounded-xl overflow-hidden">
+                        <div className="flex items-center gap-3 bg-muted/40 px-4 py-3">
+                          <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-800/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            {i + 1}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-sm">{phase.phase}</p>
+                            <p className="text-xs text-muted-foreground">{phase.duration}</p>
+                          </div>
+                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <div className="px-4 py-3 space-y-3">
+                          <p className="text-xs text-muted-foreground italic flex items-center gap-1.5">
+                            <Flag className="w-3 h-3 text-emerald-500" />
+                            {phase.goal}
+                          </p>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Tasks</p>
+                            <ul className="space-y-1.5">
+                              {phase.tasks?.map((task: string, j: number) => (
+                                <li key={j} className="flex items-start gap-2 text-xs text-foreground/80">
+                                  <Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                  {task}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          {phase.resources?.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Resources</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {phase.resources.map((res: string, j: number) => (
+                                  <span key={j} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-muted border border-border text-muted-foreground">
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                    {res}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              )}
+
+              {!roadmap && !roadmapMutation.isPending && (
+                <CardContent className="px-6 pb-6">
+                  <div className="border border-dashed border-emerald-200 dark:border-emerald-700/40 rounded-xl p-6 text-center">
+                    <Map className="w-8 h-8 text-emerald-300 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Get a step-by-step plan to close your skill gaps and land this role.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Based on your missing keywords and current score.</p>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+
+            {/* ── Download Resume ── */}
+            {resumeText && (
+              <Card className="border-border shadow-sm">
+                <CardHeader className="px-6 pt-5 pb-4">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileDown className="w-4 h-4 text-primary" />
+                    Download Resume
+                  </CardTitle>
+                  <CardDescription className="text-xs">Export your resume in different formats</CardDescription>
+                </CardHeader>
+                <CardContent className="px-6 pb-5">
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={handleDownloadResumePDF}
+                      disabled={downloadingPDF}
+                      className="gap-2"
+                    >
+                      {downloadingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                      Download as PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleDownloadResumeDOCX}
+                      disabled={downloadingDOCX}
+                      className="gap-2"
+                    >
+                      {downloadingDOCX ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                      Download as DOCX
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3">Exports your resume text in a clean, formatted document.</p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Bottom actions */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button className="flex-1 gap-2" onClick={handleDownload} data-testid="button-download-bottom">
+              <Button className="flex-1 gap-2" onClick={handleDownloadReport}>
                 <Download className="w-4 h-4" /> Download Full Report
               </Button>
-              <Button variant="outline" className="flex-1 gap-2" onClick={() => setAnalysisResult(null)} data-testid="button-analyze-another">
+              <Button variant="outline" className="flex-1 gap-2" onClick={() => setAnalysisResult(null)}>
                 <ArrowLeft className="w-4 h-4" /> Analyze Another Resume
               </Button>
             </div>

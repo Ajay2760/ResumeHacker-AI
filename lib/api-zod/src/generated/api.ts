@@ -16,6 +16,46 @@ export const HealthCheckResponse = zod.object({
 });
 
 /**
+ * Uses AI to generate a personalized cover letter based on the resume and job description
+ * @summary Generate a tailored cover letter
+ */
+export const GenerateCoverLetterBody = zod.object({
+  resumeText: zod.string().describe("Extracted text from the uploaded resume"),
+  jobDescription: zod.string().describe("The full job description text"),
+});
+
+export const GenerateCoverLetterResponse = zod.object({
+  coverLetter: zod.string().describe("The generated cover letter text"),
+  wordCount: zod.number(),
+});
+
+/**
+ * Uses AI to create a phased career roadmap based on skill gaps and the target role
+ * @summary Generate a career roadmap
+ */
+export const GenerateCareerRoadmapBody = zod.object({
+  resumeText: zod.string(),
+  jobDescription: zod.string(),
+  missingKeywords: zod.array(zod.string()),
+  matchScore: zod.number(),
+});
+
+export const GenerateCareerRoadmapResponse = zod.object({
+  targetRole: zod.string(),
+  summary: zod.string(),
+  phases: zod.array(
+    zod.object({
+      phase: zod.string(),
+      duration: zod.string(),
+      goal: zod.string(),
+      tasks: zod.array(zod.string()),
+      resources: zod.array(zod.string()),
+    }),
+  ),
+  estimatedTimeToReady: zod.string(),
+});
+
+/**
  * Uses AI to analyze a resume against a job description and returns a structured report
  * @summary Analyze resume against job description
  */
