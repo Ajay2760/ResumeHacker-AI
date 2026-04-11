@@ -3,7 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { cp, rm } from "node:fs/promises";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
@@ -118,6 +119,17 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+
+  const resumeAiPublic = path.resolve(artifactDir, "..", "resume-ai", "dist", "public");
+  const bundledPublic = path.join(distDir, "public");
+  if (existsSync(resumeAiPublic)) {
+    await cp(resumeAiPublic, bundledPublic, { recursive: true });
+    console.info("[api-server build] copied resume-ai dist to dist/public");
+  } else {
+    console.warn(
+      "[api-server build] resume-ai/dist/public missing; UI will not be bundled unless you build @workspace/resume-ai first.",
+    );
+  }
 }
 
 buildAll().catch((err) => {

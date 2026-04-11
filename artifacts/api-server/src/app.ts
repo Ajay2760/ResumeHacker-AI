@@ -20,6 +20,7 @@ function resolveFrontendDist(): string | undefined {
 
   const bundleDir = dirname(fileURLToPath(import.meta.url));
   const candidates = [
+    join(bundleDir, "public"),
     join(bundleDir, "..", "..", "resume-ai", "dist", "public"),
     path.resolve(process.cwd(), "artifacts", "resume-ai", "dist", "public"),
     path.resolve(process.cwd(), "../resume-ai/dist/public"),
@@ -61,19 +62,23 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
-if (process.env.NODE_ENV === "production") {
-  const frontendDist = resolveFrontendDist();
-  if (frontendDist) {
-    app.use(express.static(frontendDist));
-    app.get("*", (_req, res) => {
-      res.sendFile(path.join(frontendDist, "index.html"));
-    });
-  } else {
-    logger.warn(
-      "Production frontend dist not found (expected resume-ai/dist/public). " +
-        "Build the resume-ai package before api-server, or set FRONTEND_DIST.",
-    );
-  }
+const frontendDist = resolveFrontendDist();
+if (frontendDist) {
+  app.use(express.static(frontendDist));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDist, "index.html"));
+  });
+} else if (
+  process.env.NODE_ENV === "production" ||
+  process.env.RENDER === "true"
+) {
+  logger.warn(
+    "Frontend dist not found (expected dist/public next to the server bundle, or resume-ai/dist/public). " +
+      "Build @workspace/resume-ai before @workspace/api-server, or set FRONTEND_DIST.",
+  );
 }
 
 export default app;
