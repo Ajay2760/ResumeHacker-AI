@@ -282,4 +282,76 @@ ${jobDescription}`;
   }
 });
 
+router.post("/resume/optimize", async (req, res) => {
+  const { resumeText } = req.body;
+
+  if (!resumeText || typeof resumeText !== "string") {
+    res.status(400).json({ error: "validation_error", message: "resumeText is required" });
+    return;
+  }
+
+  const system = `You are an expert ATS Resume Optimizer and Professional Resume Writer. 
+Your task is to analyze the uploaded resume and automatically detect and fix issues related to:
+1. Grammar, spelling, and punctuation errors
+2. Weak or vague bullet points
+3. Poor action verb usage
+4. Lack of quantification (metrics, impact)
+5. Inconsistent formatting or structure
+6. ATS compatibility issues (keywords, readability, section clarity)
+7. Redundant or irrelevant information
+
+Instructions:
+- Preserve the original meaning and intent of the resume
+- Improve content using strong action verbs and measurable impact
+- Ensure ATS-friendly formatting (clear headings, bullet points, consistent structure)
+- Do NOT add false information or fabricate experience
+- Keep the resume concise, professional, and industry-standard
+- Ensure the improved resume can be directly converted into .docx and .pdf without breaking layout
+- Maintain a clean, single-column structure
+- Avoid tables, images, or complex formatting that may break ATS parsing
+- Optimize for both ATS systems and human recruiters
+
+Tone:
+Professional, concise, and results-oriented`;
+
+  const userMessage = `Analyze the uploaded resume and return a structured JSON format exactly matching this schema:
+{
+  "detected_issues": [
+    {
+      "section": "<section_name>",
+      "issue": "<description of the problem>",
+      "fix": "<what was improved>"
+    }
+  ],
+  "improved_resume_text": "<fully corrected and optimized resume in clean text format>",
+  "doc_formatting_guidelines": {
+    "font": "Calibri or Arial",
+    "font_size": "10-12",
+    "section_headings": "Bold, consistent size",
+    "spacing": "Proper line spacing and margins",
+    "bullet_style": "Standard round bullets"
+  }
+}
+
+Return ONLY valid JSON. Do not include markdown blocks or any preamble.
+
+Uploaded Resume:
+${resumeText}`;
+
+  try {
+    let jsonText = await resumeCompleteJson(system, userMessage, 4000);
+    jsonText = jsonText.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "").trim();
+
+    const result = JSON.parse(jsonText);
+    res.json(result);
+  } catch (err) {
+    if (err instanceof SyntaxError) {
+      req.log.error({ err }, "Resume optimization JSON parse failed");
+      res.status(500).json({ error: "parse_error", message: "Failed to parse AI response as JSON" });
+    } else {
+      sendAiRouteError(req, res, err, "Resume optimization failed", "Optimization failed.");
+    }
+  }
+});
+
 export default router;

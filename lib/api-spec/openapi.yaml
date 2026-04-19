@@ -119,6 +119,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /resume/optimize:
+    post:
+      operationId: optimizeResume
+      tags: [resume]
+      summary: Optimize resume content and formatting
+      description: Analyzes the uploaded resume and automatically detects and fixes issues related to grammar, section formatting, and keywords.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OptimizeResumeBody"
+      responses:
+        "200":
+          description: Optimization complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OptimizeResumeResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -282,6 +313,61 @@ components:
         - summary
         - phases
         - estimatedTimeToReady
+    OptimizeResumeBody:
+      type: object
+      properties:
+        resumeText:
+          type: string
+          description: Extracted text from the uploaded resume to be optimized
+      required:
+        - resumeText
+    OptimizeIssue:
+      type: object
+      properties:
+        section:
+          type: string
+        issue:
+          type: string
+        fix:
+          type: string
+      required:
+        - section
+        - issue
+        - fix
+    OptimizeFormatting:
+      type: object
+      properties:
+        font:
+          type: string
+        font_size:
+          type: string
+        section_headings:
+          type: string
+        spacing:
+          type: string
+        bullet_style:
+          type: string
+      required:
+        - font
+        - font_size
+        - section_headings
+        - spacing
+        - bullet_style
+    OptimizeResumeResult:
+      type: object
+      properties:
+        detected_issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/OptimizeIssue"
+        improved_resume_text:
+          type: string
+        doc_formatting_guidelines:
+          $ref: "#/components/schemas/OptimizeFormatting"
+      required:
+        - detected_issues
+        - improved_resume_text
+        - doc_formatting_guidelines
     ErrorResponse:
       type: object
       properties:
