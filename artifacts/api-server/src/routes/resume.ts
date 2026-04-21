@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { AnalyzeResumeBody } from "@workspace/api-zod";
+import { AnalyzeResumeBody, TailorResumeBody } from "@workspace/api-zod";
 import {
   anthropicMessagesModel,
   groqMessagesModel,
@@ -350,6 +350,83 @@ ${resumeText}`;
       res.status(500).json({ error: "parse_error", message: "Failed to parse AI response as JSON" });
     } else {
       sendAiRouteError(req, res, err, "Resume optimization failed", "Optimization failed.");
+    }
+  }
+});
+
+router.post("/resume/tailor", async (req, res) => {
+  const parsed = TailorResumeBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "validation_error", message: "resumeText and jobDescription are required" });
+    return;
+  }
+
+  const { resumeText, jobDescription } = parsed.data;
+
+  const system = `You are an expert ATS Resume Optimizer and Professional Executive Resume Writer. 
+Your task is to completely rewrite and restructure the provided resume so that it perfectly matches the given Job Description.
+You will extract all details and return them in a specific JSON structure so the application can render them into resume templates.
+
+Instructions:
+- Keep the candidate's core truth, but rewrite descriptions, summary, and skills to highlight overlaps with the job description.
+- Use strong action verbs and ensure high impact metrics are preserved or enhanced.
+- Re-order skills so the most relevant ones to the JD appear first.
+- Re-write the professional summary to specifically position the candidate for this exact job description.
+- Return ONLY valid JSON matching the exact schema below. Do not use markdown blocks (\`\`\`json) or any preamble.
+
+Schema:
+{
+  "personalInfo": {
+    "name": "<Candidate Name>",
+    "email": "<Email>",
+    "phone": "<Phone>",
+    "location": "<City, State>",
+    "linkedin": "<LinkedIn URL if present>",
+    "github": "<GitHub/Portfolio URL if present>"
+  },
+  "professionalSummary": "<Tailored 3-4 sentence professional summary>",
+  "skills": ["<Skill 1>", "<Skill 2>", ...],
+  "experience": [
+    {
+      "company": "<Company Name>",
+      "role": "<Job Title>",
+      "duration": "<Dates>",
+      "location": "<Location>",
+      "bullets": [
+        "<Strong, JD-tailored action-verb bullet point>",
+        "<Bullet 2>"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "<School>",
+      "degree": "<Degree>",
+      "duration": "<Dates>"
+    }
+  ]
+}`;
+
+  const userMessage = `Rewrite and structure my resume based on this job description.
+  
+Job Description:
+${jobDescription}
+
+My Current Resume:
+${resumeText}`;
+
+  try {
+    let jsonText = await resumeCompleteJson(system, userMessage, 4000);
+    jsonText = jsonText.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "").trim();
+
+    const result = JSON.parse(jsonText);
+    res.json(result);
+  } catch (err) {
+    if (err instanceof SyntaxError) {
+      req.log.error({ err }, "Resume tailoring JSON parse failed");
+      res.status(500).json({ error: "parse_error", message: "Failed to parse AI response as JSON" });
+    } else {
+      sendAiRouteError(req, res, err, "Resume tailoring failed", "Tailoring failed.");
     }
   }
 });

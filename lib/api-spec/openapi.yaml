@@ -150,6 +150,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /resume/tailor:
+    post:
+      operationId: tailorResume
+      tags: [resume]
+      summary: Tailor resume to a job description
+      description: Completely rewrites and restructures the resume to perfectly match the provided job description.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TailorResumeBody"
+      responses:
+        "200":
+          description: Tailoring complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TailoredResumeResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -375,6 +406,87 @@ components:
           type: string
         message:
           type: string
-      required:
         - error
         - message
+    TailorResumeBody:
+      type: object
+      properties:
+        resumeText:
+          type: string
+          description: Extracted text from the uploaded resume
+        jobDescription:
+          type: string
+          description: The full job description text
+      required:
+        - resumeText
+        - jobDescription
+    ResumeExperience:
+      type: object
+      properties:
+        company:
+          type: string
+        role:
+          type: string
+        duration:
+          type: string
+        location:
+          type: string
+        bullets:
+          type: array
+          items:
+            type: string
+      required:
+        - company
+        - role
+        - duration
+        - bullets
+    ResumeEducation:
+      type: object
+      properties:
+        institution:
+          type: string
+        degree:
+          type: string
+        duration:
+          type: string
+      required:
+        - institution
+        - degree
+    TailoredResumeResult:
+      type: object
+      properties:
+        personalInfo:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+            location:
+              type: string
+            linkedin:
+              type: string
+            github:
+              type: string
+        professionalSummary:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        experience:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumeExperience"
+        education:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumeEducation"
+      required:
+        - personalInfo
+        - professionalSummary
+        - skills
+        - experience
+        - education

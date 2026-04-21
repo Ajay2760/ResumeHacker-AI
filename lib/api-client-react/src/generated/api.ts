@@ -371,3 +371,90 @@ export const useAnalyzeResume = <
 > => {
   return useMutation(getAnalyzeResumeMutationOptions(options));
 };
+
+/**
+ * Completely rewrites and restructures the resume to perfectly match the provided job description.
+ * @summary Tailor resume to a job description
+ */
+export const getTailorResumeUrl = () => {
+  return `/api/resume/tailor`;
+};
+
+export const tailorResume = async (
+  tailorResumeBody: import("./api.schemas").TailorResumeBody,
+  options?: RequestInit,
+): Promise<import("./api.schemas").TailoredResumeResult> => {
+  return customFetch<import("./api.schemas").TailoredResumeResult>(getTailorResumeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(tailorResumeBody),
+  });
+};
+
+export const getTailorResumeMutationOptions = <
+  TError = ErrorType<import("./api.schemas").ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tailorResume>>,
+    TError,
+    { data: BodyType<import("./api.schemas").TailorResumeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tailorResume>>,
+  TError,
+  { data: BodyType<import("./api.schemas").TailorResumeBody> },
+  TContext
+> => {
+  const mutationKey = ["tailorResume"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tailorResume>>,
+    { data: BodyType<import("./api.schemas").TailorResumeBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return tailorResume(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TailorResumeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tailorResume>>
+>;
+export type TailorResumeMutationBody = BodyType<import("./api.schemas").TailorResumeBody>;
+export type TailorResumeMutationError = ErrorType<import("./api.schemas").ErrorResponse>;
+
+/**
+ * @summary Tailor resume to a job description
+ */
+export const useTailorResume = <
+  TError = ErrorType<import("./api.schemas").ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tailorResume>>,
+    TError,
+    { data: BodyType<import("./api.schemas").TailorResumeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tailorResume>>,
+  TError,
+  { data: BodyType<import("./api.schemas").TailorResumeBody> },
+  TContext
+> => {
+  return useMutation(getTailorResumeMutationOptions(options));
+};

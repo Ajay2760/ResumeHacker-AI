@@ -94,3 +94,42 @@ export const AnalyzeResumeResponse = zod.object({
     confidenceLevel: zod.enum(["High", "Medium", "Low"]),
   }),
 });
+
+/**
+ * Completely rewrites and restructures the resume to perfectly match the provided job description.
+ * @summary Tailor resume to a job description
+ */
+export const TailorResumeBody = zod.object({
+  resumeText: zod.string().describe("Extracted text from the uploaded resume"),
+  jobDescription: zod.string().describe("The full job description text"),
+});
+
+export const TailoredResumeResult = zod.object({
+  personalInfo: zod.object({
+    name: zod.string(),
+    email: zod.string(),
+    phone: zod.string(),
+    location: zod.string(),
+    linkedin: zod.string(),
+    github: zod.string(),
+  }),
+  professionalSummary: zod.string(),
+  skills: zod.array(zod.string()),
+  experience: zod.array(
+    zod.object({
+      company: zod.string(),
+      role: zod.string(),
+      duration: zod.string(),
+      location: zod.string(),
+      bullets: zod.array(zod.string()),
+    })
+  ),
+  education: zod.array(
+    zod.object({
+      institution: zod.string(),
+      degree: zod.string(),
+      duration: zod.string(),
+    })
+  ),
+});
+

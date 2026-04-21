@@ -88,3 +88,39 @@ export interface ErrorResponse {
   error: string;
   message: string;
 }
+
+export interface TailorResumeBody {
+  /** Extracted text from the uploaded resume */
+  resumeText: string;
+  /** The full job description text */
+  jobDescription: string;
+}
+
+export interface ResumeExperience {
+  company: string;
+  role: string;
+  duration: string;
+  location: string;
+  bullets: string[];
+}
+
+export interface ResumeEducation {
+  institution: string;
+  degree: string;
+  duration: string;
+}
+
+export interface TailoredResumeResult {
+  personalInfo: {
+    name: string;
+    email: string;
+    phone: string;
+    location: string;
+    linkedin: string;
+    github: string;
+  };
+  professionalSummary: string;
+  skills: string[];
+  experience: ResumeExperience[];
+  education: ResumeEducation[];
+}
