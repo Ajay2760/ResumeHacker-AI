@@ -406,6 +406,7 @@ components:
           type: string
         message:
           type: string
+      required:
         - error
         - message
     TailorResumeBody:

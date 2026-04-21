@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
-import { useAnalyzeResume, useGenerateCoverLetter, useGenerateCareerRoadmap } from "@workspace/api-client-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useAnalyzeResume, useGenerateCoverLetter, useGenerateCareerRoadmap, useTailorResume } from "@workspace/api-client-react";
+import type { TailoredResumeResult } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { extractTextFromPDF } from "@/lib/pdf";
 import {
@@ -7,7 +8,7 @@ import {
   ChevronRight, Check, Copy, Sun, Moon, Download,
   Target, Zap, Shield, TrendingUp, ArrowLeft, Sparkles,
   BookOpen, Award, Star, Mail, Map, FileDown, RotateCw,
-  ChevronDown, ExternalLink, Clock, Flag
+  ChevronDown, ExternalLink, Clock, Flag, Printer, FileEdit
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { TemplateSelector, ResumeTemplateRenderer } from "@/components/ResumeTemplates";
+import type { TemplateName } from "@/components/ResumeTemplates";
 
 // ─── Theme Toggle ────────────────────────────────────────────────────────────
 function useTheme() {
@@ -313,13 +316,20 @@ export default function Home() {
   const [downloadingPDF, setDownloadingPDF] = useState(false);
   const [downloadingDOCX, setDownloadingDOCX] = useState(false);
 
+  // ── Tailor feature state ──
+  const [tailoredResult, setTailoredResult] = useState<TailoredResumeResult | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateName>("modern");
+  const [tailorView, setTailorView] = useState(false);
+
   const analyzeMutation = useAnalyzeResume();
   const coverLetterMutation = useGenerateCoverLetter();
   const roadmapMutation = useGenerateCareerRoadmap();
+  const tailorMutation = useTailorResume();
   const { toast } = useToast();
   const { theme, toggle: toggleTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const resumePrintRef = useRef<HTMLDivElement>(null);
 
   const handleFile = async (file: File) => {
     if (!file) return;
@@ -399,6 +409,81 @@ export default function Home() {
       }
     );
   };
+
+  // ── Tailor Resume handler ──
+  const handleTailorResume = () => {
+    if (!jobDescription.trim()) {
+      toast({ title: "Job description required", description: "Please paste the job description.", variant: "destructive" });
+      return;
+    }
+    if (!resumeText.trim()) {
+      toast({ title: "Resume required", description: "Please upload or paste your resume.", variant: "destructive" });
+      return;
+    }
+    tailorMutation.mutate(
+      { data: { jobDescription: jobDescription.trim(), resumeText: resumeText.trim() } },
+      {
+        onSuccess: (result: any) => {
+          setTailoredResult(result as TailoredResumeResult);
+          setTailorView(true);
+          toast({ title: "Resume tailored!", description: "Your resume has been rewritten for this role." });
+          setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        },
+        onError: (err: any) => {
+          toast({ title: "Tailoring failed", description: err.message || "Something went wrong.", variant: "destructive" });
+        }
+      }
+    );
+  };
+
+  // ── PDF Export via browser print ──
+  const handleExportPDF = useCallback(() => {
+    // Create a detached window for printing just the resume
+    const printArea = resumePrintRef.current;
+    if (!printArea) return;
+
+    const printWindow = window.open("", "_blank", "width=900,height=1100");
+    if (!printWindow) {
+      toast({ title: "Popup blocked", description: "Please allow popups and try again.", variant: "destructive" });
+      return;
+    }
+
+    // Copy all stylesheets into the print window
+    const stylesheets = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+      .map(el => el.outerHTML)
+      .join("\n");
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Resume - ${tailoredResult?.personalInfo?.name || "Resume"}</title>
+        ${stylesheets}
+        <style>
+          body { margin: 0; padding: 0; background: #fff; }
+          .resume-template { box-shadow: none !important; border-radius: 0 !important; max-width: 100% !important; margin: 0 !important; }
+          @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          }
+        </style>
+      </head>
+      <body>
+        ${printArea.innerHTML}
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+
+    // Wait for styles to load then print
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      }, 400);
+    };
+  }, [tailoredResult, toast]);
 
   const handleDownloadResumePDF = async () => {
     if (!resumeText) return;
@@ -499,8 +584,88 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-4 py-10 pb-24">
 
+        {/* ── Tailored Resume View ── */}
+        {tailorView && tailoredResult && !tailorMutation.isPending && (
+          <div ref={resultsRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Top bar */}
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="sm" onClick={() => { setTailorView(false); setTailoredResult(null); }} className="gap-2">
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-2">
+                  <Printer className="w-4 h-4" />
+                  Export PDF
+                </Button>
+              </div>
+            </div>
+
+            {/* Header */}
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
+                <FileEdit className="w-3.5 h-3.5" />
+                ATS-Tailored Resume
+              </div>
+              <h2 className="text-2xl font-bold">Your Resume Has Been Tailored</h2>
+              <p className="text-muted-foreground text-sm mt-1">Select a template below and export as PDF when ready.</p>
+            </div>
+
+            {/* Template Selector */}
+            <Card className="border-border shadow-sm">
+              <CardHeader className="px-6 pt-5 pb-3">
+                <CardTitle className="text-sm font-semibold">Choose Template</CardTitle>
+              </CardHeader>
+              <CardContent className="px-6 pb-5">
+                <TemplateSelector selected={selectedTemplate} onChange={setSelectedTemplate} />
+              </CardContent>
+            </Card>
+
+            {/* Rendered Resume */}
+            <div ref={resumePrintRef}>
+              <ResumeTemplateRenderer template={selectedTemplate} data={tailoredResult} />
+            </div>
+
+            {/* Bottom actions */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button className="flex-1 gap-2" onClick={handleExportPDF}>
+                <Printer className="w-4 h-4" /> Export as PDF
+              </Button>
+              <Button variant="outline" className="flex-1 gap-2" onClick={handleTailorResume} disabled={tailorMutation.isPending}>
+                {tailorMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCw className="w-4 h-4" />}
+                Re-Tailor
+              </Button>
+              <Button variant="outline" className="flex-1 gap-2" onClick={() => { setTailorView(false); setTailoredResult(null); }}>
+                <ArrowLeft className="w-4 h-4" /> Start Over
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Tailor Loading ── */}
+        {tailorMutation.isPending && (
+          <div className="space-y-6 max-w-4xl mx-auto py-8 animate-in fade-in">
+            <div className="text-center space-y-3 mb-8">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              </div>
+              <h2 className="text-2xl font-bold">Tailoring your resume...</h2>
+              <p className="text-muted-foreground">Our AI is rewriting your resume to match the job description perfectly.</p>
+              <div className="flex justify-center gap-2 pt-1">
+                {["Analyzing JD", "Rewriting bullets", "Optimizing keywords", "Structuring output"].map((step, i) => (
+                  <span key={i} className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium animate-pulse" style={{ animationDelay: `${i * 0.3}s` }}>
+                    {step}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <Skeleton className="h-64 w-full rounded-2xl" />
+            <Skeleton className="h-48 w-full rounded-2xl" />
+          </div>
+        )}
+
         {/* ── Input View ── */}
-        {!analysisResult && !analyzeMutation.isPending && (
+        {!analysisResult && !analyzeMutation.isPending && !tailorView && !tailorMutation.isPending && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="text-center max-w-2xl mx-auto">
               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
@@ -524,6 +689,7 @@ export default function Home() {
                 { icon: <BookOpen className="w-3.5 h-3.5" />, text: "Bullet Rewrites" },
                 { icon: <Mail   className="w-3.5 h-3.5" />, text: "Cover Letter" },
                 { icon: <Map    className="w-3.5 h-3.5" />, text: "Career Roadmap" },
+                { icon: <FileEdit className="w-3.5 h-3.5" />, text: "ATS Resume Tailor" },
               ].map(({ icon, text }) => (
                 <span key={text} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                   {icon}{text}
@@ -663,7 +829,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-border flex justify-center">
+            <div className="pt-4 border-t border-border flex flex-col sm:flex-row justify-center gap-3">
               <Button
                 size="lg"
                 className="h-13 px-10 text-base font-semibold rounded-2xl shadow-lg shadow-primary/25 gap-2"
@@ -672,6 +838,16 @@ export default function Home() {
               >
                 Rank My Resume
                 <ChevronRight className="w-5 h-5" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-13 px-10 text-base font-semibold rounded-2xl gap-2 border-primary/40 hover:border-primary hover:bg-primary/5"
+                onClick={handleTailorResume}
+                disabled={!jobDescription.trim() || !resumeText.trim() || tailorMutation.isPending}
+              >
+                {tailorMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileEdit className="w-5 h-5" />}
+                Tailor Resume
               </Button>
             </div>
           </div>

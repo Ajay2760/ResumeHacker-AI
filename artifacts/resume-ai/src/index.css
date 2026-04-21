@@ -197,3 +197,485 @@
 .score-gradient-mid    { stroke: url(#gradMid);    }
 .score-gradient-good   { stroke: url(#gradGood);   }
 .score-gradient-high   { stroke: url(#gradHigh);   }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESUME TEMPLATE BASE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.resume-template {
+  background: #ffffff;
+  color: #1a1a1a;
+  max-width: 850px;
+  margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px -4px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
+  line-height: 1.55;
+}
+
+/* ── MODERN TEMPLATE ─────────────────────────────────────────────────────── */
+
+.modern-template {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  padding: 40px 48px;
+}
+
+.modern-header {
+  text-align: center;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #6366f1;
+}
+
+.modern-name {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #1e1b4b;
+  margin: 0 0 12px;
+}
+
+.modern-contact {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  color: #64748b;
+  font-size: 12.5px;
+}
+
+.modern-contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.modern-icon {
+  width: 13px;
+  height: 13px;
+  color: #6366f1;
+}
+
+.modern-section {
+  margin-bottom: 24px;
+}
+
+.modern-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #6366f1;
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modern-summary {
+  font-size: 13.5px;
+  color: #374151;
+  margin: 0;
+  line-height: 1.65;
+}
+
+.modern-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.modern-skill-tag {
+  display: inline-block;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #c7d2fe;
+}
+
+.modern-exp-item {
+  margin-bottom: 18px;
+}
+
+.modern-exp-item:last-child {
+  margin-bottom: 0;
+}
+
+.modern-exp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+  gap: 12px;
+}
+
+.modern-exp-role {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin: 0;
+}
+
+.modern-exp-company {
+  font-size: 13px;
+  color: #64748b;
+  margin: 2px 0 0;
+}
+
+.modern-exp-duration {
+  font-size: 12px;
+  color: #6366f1;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.modern-exp-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.modern-exp-bullets li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 4px;
+  line-height: 1.6;
+}
+
+.modern-exp-bullets li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: #6366f1;
+  font-weight: 700;
+}
+
+.modern-edu-item {
+  margin-bottom: 12px;
+}
+
+.modern-edu-item:last-child {
+  margin-bottom: 0;
+}
+
+.modern-edu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.modern-edu-degree {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin: 0;
+}
+
+.modern-edu-institution {
+  font-size: 13px;
+  color: #64748b;
+  margin: 2px 0 0;
+}
+
+/* ── CLASSIC TEMPLATE ────────────────────────────────────────────────────── */
+
+.classic-template {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  padding: 44px 52px;
+}
+
+.classic-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.classic-name {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #111;
+  margin: 0 0 8px;
+}
+
+.classic-contact {
+  font-size: 12px;
+  color: #555;
+  letter-spacing: 0.5px;
+}
+
+.classic-divider {
+  border: none;
+  border-top: 2px solid #111;
+  margin: 12px 0 20px;
+}
+
+.classic-section {
+  margin-bottom: 20px;
+}
+
+.classic-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #111;
+  margin: 0 0 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #ccc;
+}
+
+.classic-summary {
+  font-size: 13px;
+  color: #333;
+  margin: 0;
+  line-height: 1.7;
+  font-style: italic;
+}
+
+.classic-exp-item {
+  margin-bottom: 16px;
+}
+
+.classic-exp-item:last-child {
+  margin-bottom: 0;
+}
+
+.classic-exp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+  gap: 12px;
+}
+
+.classic-exp-role {
+  font-size: 14px;
+  color: #111;
+}
+
+.classic-exp-company {
+  font-size: 13px;
+  color: #444;
+}
+
+.classic-exp-duration {
+  font-size: 12px;
+  color: #555;
+  font-style: italic;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.classic-exp-bullets {
+  list-style: disc;
+  padding-left: 20px;
+  margin: 4px 0 0;
+}
+
+.classic-exp-bullets li {
+  font-size: 12.5px;
+  color: #333;
+  margin-bottom: 3px;
+  line-height: 1.6;
+}
+
+.classic-edu-item {
+  margin-bottom: 10px;
+}
+
+.classic-edu-item:last-child {
+  margin-bottom: 0;
+}
+
+.classic-skills {
+  font-size: 12.5px;
+  color: #333;
+  margin: 0;
+  line-height: 1.7;
+}
+
+/* ── MINIMAL TEMPLATE ────────────────────────────────────────────────────── */
+
+.minimal-template {
+  font-family: 'Arial', 'Helvetica Neue', Helvetica, sans-serif;
+  padding: 32px 40px;
+}
+
+.minimal-header {
+  margin-bottom: 16px;
+}
+
+.minimal-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: #000;
+  margin: 0 0 4px;
+  letter-spacing: -0.3px;
+}
+
+.minimal-contact {
+  font-size: 11.5px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.minimal-sep {
+  color: #999;
+  margin: 0 2px;
+}
+
+.minimal-section {
+  margin-bottom: 14px;
+  padding-bottom: 0;
+}
+
+.minimal-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #000;
+  margin: 0 0 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #000;
+}
+
+.minimal-body {
+  font-size: 12px;
+  color: #222;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.minimal-exp-item {
+  margin-bottom: 10px;
+}
+
+.minimal-exp-item:last-child {
+  margin-bottom: 0;
+}
+
+.minimal-exp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12.5px;
+  gap: 8px;
+}
+
+.minimal-exp-duration {
+  font-size: 11.5px;
+  color: #444;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.minimal-exp-bullets {
+  list-style: disc;
+  padding-left: 18px;
+  margin: 2px 0 0;
+}
+
+.minimal-exp-bullets li {
+  font-size: 11.5px;
+  color: #222;
+  margin-bottom: 2px;
+  line-height: 1.55;
+}
+
+/* ── TEMPLATE SELECTOR ───────────────────────────────────────────────────── */
+
+.template-selector {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.template-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 2px solid hsl(var(--border));
+  background: hsl(var(--card));
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 120px;
+}
+
+.template-option:hover {
+  border-color: hsl(var(--primary) / 0.5);
+  background: hsl(var(--accent));
+}
+
+.template-option--active {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--accent));
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.3);
+}
+
+.template-option-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+}
+
+.template-option-desc {
+  font-size: 10.5px;
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+}
+
+/* ── PRINT / PDF EXPORT ──────────────────────────────────────────────────── */
+
+@media print {
+  /* Hide everything except the resume */
+  body > *:not(#resume-print-root),
+  header,
+  nav,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+
+  #resume-print-root {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+
+  .resume-template {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Avoid page-breaks in the middle of sections */
+  .modern-exp-item,
+  .classic-exp-item,
+  .minimal-exp-item,
+  .modern-section,
+  .classic-section,
+  .minimal-section {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure colors print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
