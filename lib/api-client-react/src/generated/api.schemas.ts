@@ -110,6 +110,24 @@ export interface ResumeEducation {
   duration: string;
 }
 
+export interface ResumeProject {
+  name: string;
+  technologies?: string;
+  duration?: string;
+  bullets: string[];
+}
+
+export interface ResumeCertification {
+  name: string;
+  issuer?: string;
+  date?: string;
+}
+
+export interface ResumeAdditionalSection {
+  sectionTitle: string;
+  items: string[];
+}
+
 export interface TailoredResumeResult {
   personalInfo: {
     name: string;
@@ -123,4 +141,7 @@ export interface TailoredResumeResult {
   skills: string[];
   experience: ResumeExperience[];
   education: ResumeEducation[];
+  projects?: ResumeProject[];
+  certifications?: ResumeCertification[];
+  additionalSections?: ResumeAdditionalSection[];
 }

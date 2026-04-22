@@ -453,6 +453,45 @@ components:
       required:
         - institution
         - degree
+    ResumeProject:
+      type: object
+      properties:
+        name:
+          type: string
+        technologies:
+          type: string
+        duration:
+          type: string
+        bullets:
+          type: array
+          items:
+            type: string
+      required:
+        - name
+        - bullets
+    ResumeCertification:
+      type: object
+      properties:
+        name:
+          type: string
+        issuer:
+          type: string
+        date:
+          type: string
+      required:
+        - name
+    ResumeAdditionalSection:
+      type: object
+      properties:
+        sectionTitle:
+          type: string
+        items:
+          type: array
+          items:
+            type: string
+      required:
+        - sectionTitle
+        - items
     TailoredResumeResult:
       type: object
       properties:
@@ -485,6 +524,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ResumeEducation"
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumeProject"
+        certifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumeCertification"
+        additionalSections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumeAdditionalSection"
       required:
         - personalInfo
         - professionalSummary

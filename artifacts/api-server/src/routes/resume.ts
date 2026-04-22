@@ -365,13 +365,18 @@ router.post("/resume/tailor", async (req, res) => {
 
   const system = `You are an expert ATS Resume Optimizer and Professional Executive Resume Writer. 
 Your task is to completely rewrite and restructure the provided resume so that it perfectly matches the given Job Description.
-You will extract all details and return them in a specific JSON structure so the application can render them into resume templates.
+You will extract ALL details from the resume and return them in a specific JSON structure.
 
-Instructions:
-- Keep the candidate's core truth, but rewrite descriptions, summary, and skills to highlight overlaps with the job description.
+CRITICAL RULES:
+- NEVER drop, skip, or remove any section or item from the original resume. If the resume has Projects, Certifications, Awards, Volunteer Work, Publications, Languages, Interests, or ANY other sections — you MUST include them ALL in the output.
+- DO NOT DELETE projects, certifications, or additional sections just because they seem irrelevant to the JD. Instead, keep them, and try to alter/tailor the descriptions to highlight any possible transferable skills for the JD requirement.
+- Keep the candidate's core truth, but rewrite descriptions, summary, and bullets to highlight overlaps with the job description.
 - Use strong action verbs and ensure high impact metrics are preserved or enhanced.
 - Re-order skills so the most relevant ones to the JD appear first.
 - Re-write the professional summary to specifically position the candidate for this exact job description.
+- Tailor project descriptions to emphasize technologies and outcomes relevant to the JD.
+- For certifications: keep all certifications but order the most JD-relevant ones first.
+- For any other sections (Awards, Volunteer, Publications, Languages, Hobbies, etc.): include them in "additionalSections" and tailor the language where possible.
 - Return ONLY valid JSON matching the exact schema below. Do not use markdown blocks (\`\`\`json) or any preamble.
 
 Schema:
@@ -404,10 +409,40 @@ Schema:
       "degree": "<Degree>",
       "duration": "<Dates>"
     }
+  ],
+  "projects": [
+    {
+      "name": "<Project Name>",
+      "technologies": "<Tech stack used>",
+      "duration": "<Dates if available>",
+      "bullets": [
+        "<JD-tailored description of what was built and impact>"
+      ]
+    }
+  ],
+  "certifications": [
+    {
+      "name": "<Certification Name>",
+      "issuer": "<Issuing Organization>",
+      "date": "<Date obtained>"
+    }
+  ],
+  "additionalSections": [
+    {
+      "sectionTitle": "<Section Name, e.g. Awards, Volunteer Experience, Publications, Languages>",
+      "items": [
+        "<Item description tailored to JD where possible>"
+      ]
+    }
   ]
-}`;
+}
 
-  const userMessage = `Rewrite and structure my resume based on this job description.
+IMPORTANT: 
+- If the resume has NO projects, return "projects": []. Same for certifications and additionalSections.
+- But if they DO exist in the resume, you MUST include them. Never skip sections.
+- Scan the entire resume carefully for ALL sections before generating output.`;
+
+  const userMessage = `Rewrite and structure my ENTIRE resume based on this job description. Preserve ALL sections from my resume — do NOT drop any sections like Projects, Certifications, Awards, etc.
   
 Job Description:
 ${jobDescription}
@@ -416,7 +451,7 @@ My Current Resume:
 ${resumeText}`;
 
   try {
-    let jsonText = await resumeCompleteJson(system, userMessage, 4000);
+    let jsonText = await resumeCompleteJson(system, userMessage, 6000);
     jsonText = jsonText.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "").trim();
 
     const result = JSON.parse(jsonText);

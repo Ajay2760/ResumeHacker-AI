@@ -5,7 +5,7 @@ interface Props {
 }
 
 export default function MinimalTemplate({ data }: Props) {
-  const { personalInfo, professionalSummary, skills, experience, education } = data;
+  const { personalInfo, professionalSummary, skills, experience, education, projects, certifications, additionalSections } = data;
 
   return (
     <div className="resume-template minimal-template" id="resume-print-area">
@@ -81,6 +81,56 @@ export default function MinimalTemplate({ data }: Props) {
           ))}
         </section>
       )}
+      {/* Projects */}
+      {projects && projects.length > 0 && (
+        <section className="minimal-section">
+          <h2 className="minimal-section-title">Projects</h2>
+          {projects.map((proj, i) => (
+            <div key={i} className="minimal-exp-item">
+              <div className="minimal-exp-header">
+                <span>
+                  <strong>{proj.name}</strong>
+                  {proj.technologies && ` — ${proj.technologies}`}
+                </span>
+                {proj.duration && <span className="minimal-exp-duration">{proj.duration}</span>}
+              </div>
+              <ul className="minimal-exp-bullets">
+                {proj.bullets.map((bullet, j) => (
+                  <li key={j}>{bullet}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {/* Certifications */}
+      {certifications && certifications.length > 0 && (
+        <section className="minimal-section">
+          <h2 className="minimal-section-title">Certifications</h2>
+          <ul className="minimal-exp-bullets" style={{ listStyleType: "none", paddingLeft: 0 }}>
+            {certifications.map((cert, i) => (
+              <li key={i} style={{ marginBottom: "4px" }}>
+                <strong>{cert.name}</strong>
+                {cert.issuer && ` — ${cert.issuer}`}
+                {cert.date && ` (${cert.date})`}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Additional Sections */}
+      {additionalSections && additionalSections.length > 0 && additionalSections.map((section, i) => (
+        <section key={i} className="minimal-section">
+          <h2 className="minimal-section-title">{section.sectionTitle}</h2>
+          <ul className="minimal-exp-bullets">
+            {section.items.map((item, j) => (
+              <li key={j}>{item}</li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
   );
 }

@@ -6,7 +6,7 @@ interface Props {
 }
 
 export default function ModernTemplate({ data }: Props) {
-  const { personalInfo, professionalSummary, skills, experience, education } = data;
+  const { personalInfo, professionalSummary, skills, experience, education, projects, certifications, additionalSections } = data;
 
   return (
     <div className="resume-template modern-template" id="resume-print-area">
@@ -85,6 +85,29 @@ export default function ModernTemplate({ data }: Props) {
         </section>
       )}
 
+      {/* Projects */}
+      {projects && projects.length > 0 && (
+        <section className="modern-section">
+          <h2 className="modern-section-title">Projects</h2>
+          {projects.map((proj, i) => (
+            <div key={i} className="modern-exp-item">
+              <div className="modern-exp-header">
+                <div>
+                  <h3 className="modern-exp-role">{proj.name}</h3>
+                  {proj.technologies && <p className="modern-exp-company">{proj.technologies}</p>}
+                </div>
+                {proj.duration && <span className="modern-exp-duration">{proj.duration}</span>}
+              </div>
+              <ul className="modern-exp-bullets">
+                {proj.bullets.map((bullet, j) => (
+                  <li key={j}>{bullet}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      )}
+
       {/* Education */}
       {education && education.length > 0 && (
         <section className="modern-section">
@@ -102,6 +125,34 @@ export default function ModernTemplate({ data }: Props) {
           ))}
         </section>
       )}
+
+      {/* Certifications */}
+      {certifications && certifications.length > 0 && (
+        <section className="modern-section">
+          <h2 className="modern-section-title">Certifications</h2>
+          <div className="modern-certs">
+            {certifications.map((cert, i) => (
+              <div key={i} className="modern-cert-item">
+                <span className="modern-cert-name">{cert.name}</span>
+                {cert.issuer && <span className="modern-cert-issuer"> — {cert.issuer}</span>}
+                {cert.date && <span className="modern-cert-date">{cert.date}</span>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Additional Sections (Awards, Volunteer, Languages, etc.) */}
+      {additionalSections && additionalSections.length > 0 && additionalSections.map((section, i) => (
+        <section key={i} className="modern-section">
+          <h2 className="modern-section-title">{section.sectionTitle}</h2>
+          <ul className="modern-exp-bullets">
+            {section.items.map((item, j) => (
+              <li key={j}>{item}</li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
   );
 }
