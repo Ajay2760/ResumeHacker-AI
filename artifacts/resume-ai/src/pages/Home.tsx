@@ -78,10 +78,10 @@ function ScoreGauge({ score }: { score: number }) {
   const grade = score >= 90 ? "A+" : score >= 80 ? "A" : score >= 70 ? "B" : score >= 60 ? "C" : score >= 40 ? "D" : "F";
 
   const { strokeColor, glowColor, label, badgeCls } =
-    score >= 90 ? { strokeColor: "#16a34a", glowColor: "#16a34a40", label: "Excellent Match", badgeCls: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" } :
-    score >= 71 ? { strokeColor: "#2563eb", glowColor: "#2563eb40", label: "Good Match", badgeCls: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" } :
-    score >= 41 ? { strokeColor: "#d97706", glowColor: "#d9770640", label: "Needs Work", badgeCls: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300" } :
-    { strokeColor: "#dc2626", glowColor: "#dc262640", label: "Poor Match", badgeCls: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" };
+    score >= 90 ? { strokeColor: "#10b981", glowColor: "#10b98140", label: "Excellent Match", badgeCls: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" } :
+    score >= 71 ? { strokeColor: "#6366f1", glowColor: "#6366f140", label: "Good Match", badgeCls: "bg-primary/10 text-primary border border-primary/20" } :
+    score >= 41 ? { strokeColor: "#f59e0b", glowColor: "#f59e0b40", label: "Needs Work", badgeCls: "bg-amber-500/10 text-amber-400 border border-amber-500/20" } :
+    { strokeColor: "#f43f5e", glowColor: "#f43f5e40", label: "Poor Match", badgeCls: "bg-rose-500/10 text-rose-400 border border-rose-500/20" };
 
   void glowColor;
 
@@ -91,17 +91,17 @@ function ScoreGauge({ score }: { score: number }) {
         <svg viewBox="0 0 320 200" width="320" height="200">
           <defs>
             <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="6" result="coloredBlur" />
+              <feGaussianBlur stdDeviation="8" result="coloredBlur" />
               <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
             </filter>
           </defs>
-          <path d={describeArc(startAngle, startAngle + sweep)} fill="none" stroke="currentColor" strokeWidth="18" strokeLinecap="round" className="text-muted/40" />
+          <path d={describeArc(startAngle, startAngle + sweep)} fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round" className="text-muted/30" />
           {score > 0 && (
             <path
               d={describeArc(startAngle, progressAngle)}
               fill="none"
               stroke={strokeColor}
-              strokeWidth="18"
+              strokeWidth="16"
               strokeLinecap="round"
               filter="url(#glow)"
               className="gauge-progress"
@@ -117,15 +117,15 @@ function ScoreGauge({ score }: { score: number }) {
             const a = startAngle + (t / 100) * sweep;
             const inner = { x: cx + (r - 16) * Math.cos(toRad(a)), y: cy + (r - 16) * Math.sin(toRad(a)) };
             const outer = { x: cx + (r + 2) * Math.cos(toRad(a)), y: cy + (r + 2) * Math.sin(toRad(a)) };
-            return <line key={t} x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y} stroke="currentColor" strokeWidth="2" className="text-border" />;
+            return <line key={t} x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y} stroke="currentColor" strokeWidth="2" className="text-border/60" />;
           })}
           {ticks.map((t) => {
             const a = startAngle + (t / 100) * sweep;
             const lp = { x: cx + (r + 22) * Math.cos(toRad(a)), y: cy + (r + 22) * Math.sin(toRad(a)) };
-            return <text key={t} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fontSize="11" fill="currentColor" className="text-muted-foreground" opacity="0.7">{t}</text>;
+            return <text key={t} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fontSize="11" fill="currentColor" className="text-muted-foreground" opacity="0.5">{t}</text>;
           })}
           <text x={cx} y={cy - 18} textAnchor="middle" fontSize="56" fontWeight="800" fill={strokeColor} fontFamily="Inter, sans-serif" className="score-appear">{displayed}</text>
-          <text x={cx} y={cy + 20} textAnchor="middle" fontSize="15" fill="currentColor" className="text-muted-foreground" fontFamily="Inter, sans-serif" opacity="0.7">out of 100</text>
+          <text x={cx} y={cy + 20} textAnchor="middle" fontSize="14" fill="currentColor" className="text-muted-foreground" fontFamily="Inter, sans-serif" opacity="0.5">out of 100</text>
           <text x={cx} y={cy + 44} textAnchor="middle" fontSize="22" fontWeight="700" fill={strokeColor} fontFamily="Inter, sans-serif">{grade}</text>
         </svg>
       </div>
@@ -147,13 +147,13 @@ function ScoreBreakdown({ score, matched, missing }: { score: number; matched: n
   return (
     <div className="grid grid-cols-3 gap-3 mt-6">
       {[
-        { label: "Keyword Coverage", value: keywordPct, icon: <Target className="w-4 h-4" />, color: "bg-blue-500" },
-        { label: "Overall Fit",      value: fitPct,     icon: <Zap    className="w-4 h-4" />, color: "bg-violet-500" },
-        { label: "Impact Score",     value: impactPct,  icon: <TrendingUp className="w-4 h-4" />, color: "bg-emerald-500" },
+        { label: "Keyword Coverage", value: keywordPct, icon: <Target className="w-4 h-4" />, color: "from-blue-500 to-cyan-500" },
+        { label: "Overall Fit",      value: fitPct,     icon: <Zap    className="w-4 h-4" />, color: "from-violet-500 to-purple-500" },
+        { label: "Impact Score",     value: impactPct,  icon: <TrendingUp className="w-4 h-4" />, color: "from-emerald-500 to-teal-500" },
       ].map((m) => (
-        <div key={m.label} className="bg-muted/50 rounded-xl p-3 text-center space-y-2">
+        <div key={m.label} className="bg-muted/30 border border-border/40 rounded-2xl p-4 text-center space-y-2 transition-all duration-200 hover:bg-muted/50">
           <div className="flex justify-center text-muted-foreground">{m.icon}</div>
-          <div className="text-lg font-bold">{m.value}%</div>
+          <div className="text-xl font-bold tracking-tight">{m.value}%</div>
           <div className="text-xs text-muted-foreground leading-tight">{m.label}</div>
           <Progress value={m.value} className="h-1.5" />
         </div>
@@ -172,18 +172,21 @@ function QuickTips({ missing, score }: { missing: string[]; score: number }) {
   if (score < 80) tips.push("Add a Professional Summary at the top targeting this exact role.");
 
   return (
-    <Card className="border-primary/20 bg-accent/30">
+    <Card className="border-primary/15 bg-primary/[0.03] overflow-hidden">
+      <div className="h-0.5 w-full bg-gradient-to-r from-primary via-violet-500 to-primary" />
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
+          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+          </div>
           Quick Wins to Boost Your Score
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ul className="space-y-2">
+        <ul className="space-y-2.5">
           {tips.slice(0, 4).map((tip, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold mt-0.5">{i + 1}</span>
+            <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
+              <span className="flex-shrink-0 w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-violet-500 text-white flex items-center justify-center text-xs font-bold mt-0.5">{i + 1}</span>
               {tip}
             </li>
           ))}
@@ -199,10 +202,10 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
   return (
     <button
       onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all
+      className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all duration-200
         ${copied
-          ? "bg-green-50 border-green-200 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300"
-          : "bg-background border-border text-muted-foreground hover:border-primary hover:text-primary"}`}
+          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+          : "bg-card/50 border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary"}`}
     >
       {copied ? <><Check className="w-3.5 h-3.5" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> {label}</>}
     </button>
@@ -213,26 +216,26 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
 function LoadingSkeleton() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto py-8 animate-in fade-in">
-      <div className="text-center space-y-3 mb-8">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+      <div className="text-center space-y-4 mb-8">
+        <div className="w-18 h-18 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
-        <h2 className="text-2xl font-bold">Ranking your resume...</h2>
-        <p className="text-muted-foreground">Our AI is cross-referencing skills, impact, and ATS compatibility.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Analyzing your resume...</h2>
+        <p className="text-muted-foreground text-sm">Our AI is cross-referencing skills, impact, and ATS compatibility.</p>
         <div className="flex justify-center gap-2 pt-1">
           {["Scanning keywords", "Analyzing bullets", "Checking format"].map((step, i) => (
-            <span key={i} className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium animate-pulse" style={{ animationDelay: `${i * 0.3}s` }}>
+            <span key={i} className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium animate-pulse" style={{ animationDelay: `${i * 0.4}s` }}>
               {step}
             </span>
           ))}
         </div>
       </div>
-      <Skeleton className="h-64 w-full rounded-2xl" />
+      <Skeleton className="h-64 w-full rounded-2xl shimmer" />
       <div className="grid md:grid-cols-2 gap-4">
-        <Skeleton className="h-48 rounded-2xl" />
-        <Skeleton className="h-48 rounded-2xl" />
+        <Skeleton className="h-48 rounded-2xl shimmer" />
+        <Skeleton className="h-48 rounded-2xl shimmer" />
       </div>
-      <Skeleton className="h-64 w-full rounded-2xl" />
+      <Skeleton className="h-64 w-full rounded-2xl shimmer" />
     </div>
   );
 }
@@ -557,36 +560,43 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
+      {/* ── Decorative background orbs ── */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-3xl animate-float" />
+        <div className="absolute top-1/2 -left-40 w-[500px] h-[500px] bg-violet-500/[0.03] rounded-full blur-3xl animate-float-delayed" />
+        <div className="absolute -bottom-40 right-1/3 w-[400px] h-[400px] bg-emerald-500/[0.02] rounded-full blur-3xl animate-float" />
+      </div>
+
       {/* ── Header ── */}
-      <header className="sticky top-0 z-20 border-b border-border bg-card/80 backdrop-blur-md">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-sm">
-              <Award className="w-4 h-4 text-primary-foreground" />
+      <header className="sticky top-0 z-20 border-b border-border/40 bg-background/70 backdrop-blur-xl">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-violet-500 flex items-center justify-center shadow-lg shadow-primary/20">
+              <Award className="w-4.5 h-4.5 text-white" />
             </div>
             <div>
               <span className="font-extrabold text-lg tracking-tight">ResumeHacker</span>
-              <span className="font-light text-lg text-primary ml-1">AI</span>
+              <span className="font-light text-lg gradient-text ml-1">AI</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground hidden sm:block">Beat the ATS. Land the interview.</span>
+            <span className="text-xs text-muted-foreground hidden sm:block font-medium">Beat the ATS. Land the interview.</span>
             <button
               onClick={toggleTheme}
-              className="w-9 h-9 rounded-xl border border-border bg-background flex items-center justify-center hover:bg-muted transition-colors"
+              className="w-9 h-9 rounded-xl border border-border/60 bg-card/50 backdrop-blur-sm flex items-center justify-center hover:bg-accent hover:border-primary/30 transition-all duration-200"
               aria-label="Toggle theme"
             >
-              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-primary" />}
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-10 pb-24">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 pb-24 relative z-10">
 
         {/* ── Tailored Resume View ── */}
         {tailorView && tailoredResult && !tailorMutation.isPending && (
-          <div ref={resultsRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div ref={resultsRef} className="space-y-6 animate-fadeInUp">
             {/* Top bar */}
             <div className="flex items-center justify-between">
               <Button variant="ghost" size="sm" onClick={() => { setTailorView(false); setTailoredResult(null); }} className="gap-2">
@@ -603,16 +613,16 @@ export default function Home() {
 
             {/* Header */}
             <div className="text-center">
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-4 py-1.5 rounded-full mb-4 border border-primary/15">
                 <FileEdit className="w-3.5 h-3.5" />
                 ATS-Tailored Resume
               </div>
-              <h2 className="text-2xl font-bold">Your Resume Has Been Tailored</h2>
-              <p className="text-muted-foreground text-sm mt-1">Select a template below and export as PDF when ready.</p>
+              <h2 className="text-2xl font-bold tracking-tight">Your Resume Has Been Tailored</h2>
+              <p className="text-muted-foreground text-sm mt-2">Select a template below and export as PDF when ready.</p>
             </div>
 
             {/* Template Selector */}
-            <Card className="border-border shadow-sm">
+            <Card>
               <CardHeader className="px-6 pt-5 pb-3">
                 <CardTitle className="text-sm font-semibold">Choose Template</CardTitle>
               </CardHeader>
@@ -628,7 +638,7 @@ export default function Home() {
 
             {/* Bottom actions */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button className="flex-1 gap-2" onClick={handleExportPDF}>
+              <Button className="flex-1 gap-2 bg-gradient-to-r from-primary to-violet-500 border-0 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30" onClick={handleExportPDF}>
                 <Printer className="w-4 h-4" /> Export as PDF
               </Button>
               <Button variant="outline" className="flex-1 gap-2" onClick={handleTailorResume} disabled={tailorMutation.isPending}>
@@ -645,42 +655,44 @@ export default function Home() {
         {/* ── Tailor Loading ── */}
         {tailorMutation.isPending && (
           <div className="space-y-6 max-w-4xl mx-auto py-8 animate-in fade-in">
-            <div className="text-center space-y-3 mb-8">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <div className="text-center space-y-4 mb-8">
+              <div className="w-18 h-18 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />
               </div>
-              <h2 className="text-2xl font-bold">Tailoring your resume...</h2>
-              <p className="text-muted-foreground">Our AI is rewriting your resume to match the job description perfectly.</p>
-              <div className="flex justify-center gap-2 pt-1">
+              <h2 className="text-2xl font-bold tracking-tight">Tailoring your resume...</h2>
+              <p className="text-muted-foreground text-sm">Our AI is rewriting your resume to match the job description perfectly.</p>
+              <div className="flex justify-center gap-2 pt-1 flex-wrap">
                 {["Analyzing JD", "Rewriting bullets", "Optimizing keywords", "Structuring output"].map((step, i) => (
-                  <span key={i} className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium animate-pulse" style={{ animationDelay: `${i * 0.3}s` }}>
+                  <span key={i} className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium animate-pulse border border-primary/10" style={{ animationDelay: `${i * 0.3}s` }}>
                     {step}
                   </span>
                 ))}
               </div>
             </div>
-            <Skeleton className="h-64 w-full rounded-2xl" />
-            <Skeleton className="h-48 w-full rounded-2xl" />
+            <Skeleton className="h-64 w-full rounded-2xl shimmer" />
+            <Skeleton className="h-48 w-full rounded-2xl shimmer" />
           </div>
         )}
 
         {/* ── Input View ── */}
         {!analysisResult && !analyzeMutation.isPending && !tailorView && !tailorMutation.isPending && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="text-center max-w-2xl mx-auto">
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+          <div className="space-y-10 animate-fadeInUp">
+            {/* Hero */}
+            <div className="text-center max-w-2xl mx-auto space-y-5">
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-4 py-2 rounded-full border border-primary/15">
                 <Sparkles className="w-3.5 h-3.5" />
                 AI-Powered Resume Analysis
               </div>
-              <h1 className="text-4xl font-extrabold tracking-tight mb-3">
-                Rank your resume against<br />
-                <span className="text-primary">any job in seconds.</span>
+              <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-[1.1]">
+                Rank your resume against{" "}
+                <span className="gradient-text">any job in seconds.</span>
               </h1>
-              <p className="text-muted-foreground text-lg">
+              <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
                 Paste a job description, upload your resume, and get your ATS score, missing keywords, bullet rewrites, and red flags — instantly.
               </p>
             </div>
 
+            {/* Feature pills */}
             <div className="flex flex-wrap justify-center gap-2">
               {[
                 { icon: <Target className="w-3.5 h-3.5" />, text: "ATS Score" },
@@ -691,22 +703,23 @@ export default function Home() {
                 { icon: <Map    className="w-3.5 h-3.5" />, text: "Career Roadmap" },
                 { icon: <FileEdit className="w-3.5 h-3.5" />, text: "ATS Resume Tailor" },
               ].map(({ icon, text }) => (
-                <span key={text} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+                <span key={text} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted/50 border border-border/40 px-3 py-1.5 rounded-full transition-colors hover:bg-accent hover:text-accent-foreground">
                   {icon}{text}
                 </span>
               ))}
             </div>
 
+            {/* Two-column inputs */}
             <div className="grid md:grid-cols-2 gap-6">
               {/* Left: Job Description */}
-              <div className="space-y-2">
-                <label className="text-sm font-semibold flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold">1</span>
+              <div className="space-y-3">
+                <label className="text-sm font-semibold flex items-center gap-2.5">
+                  <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-violet-500 text-white text-xs flex items-center justify-center font-bold shadow-sm">1</span>
                   Paste the job description
                 </label>
                 <Textarea
                   placeholder="Copy the full job posting here — the more detail, the better."
-                  className="min-h-[280px] resize-y bg-card border-border focus-visible:ring-primary text-sm"
+                  className="min-h-[280px] resize-y"
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
                 />
@@ -716,15 +729,15 @@ export default function Home() {
               </div>
 
               {/* Right: Resume */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold">2</span>
+                  <label className="text-sm font-semibold flex items-center gap-2.5">
+                    <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-violet-500 text-white text-xs flex items-center justify-center font-bold shadow-sm">2</span>
                     Your resume
                   </label>
                   <button
                     onClick={() => setIsPasting(!isPasting)}
-                    className="text-xs text-primary hover:underline font-medium"
+                    className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
                   >
                     {isPasting ? "Upload a file instead" : "Or paste your text"}
                   </button>
@@ -732,8 +745,8 @@ export default function Home() {
 
                 {!isPasting ? (
                   <div
-                    className={`border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-8 min-h-[280px] transition-all cursor-pointer
-                      ${isDragging ? "border-primary bg-primary/5 scale-[1.01]" : "border-border bg-card hover:border-primary/50 hover:bg-accent/30"}`}
+                    className={`border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-8 min-h-[280px] transition-all duration-300 cursor-pointer
+                      ${isDragging ? "border-primary bg-primary/5 scale-[1.01] shadow-lg shadow-primary/10" : "border-border/60 bg-card/30 hover:border-primary/40 hover:bg-accent/20"}`}
                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                     onDragLeave={() => setIsDragging(false)}
                     onDrop={(e) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); }}
@@ -777,7 +790,7 @@ export default function Home() {
                       </div>
                     ) : (
                       <div className="flex flex-col items-center text-center gap-3 pointer-events-none">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors ${isDragging ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ${isDragging ? "bg-primary/20 text-primary scale-110" : "bg-muted/60 text-muted-foreground"}`}>
                           <UploadCloud size={28} />
                         </div>
                         <div>
@@ -793,7 +806,7 @@ export default function Home() {
                   <div className="space-y-2">
                     <Textarea
                       placeholder="Paste your full resume text here..."
-                      className="min-h-[280px] resize-y bg-card border-border focus-visible:ring-primary text-sm"
+                      className="min-h-[280px] resize-y"
                       value={resumeText}
                       onChange={(e) => setResumeText(e.target.value)}
                     />
@@ -829,10 +842,11 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-border flex flex-col sm:flex-row justify-center gap-3">
+            {/* CTA Buttons */}
+            <div className="pt-2 border-t border-border/30 flex flex-col sm:flex-row justify-center gap-3">
               <Button
                 size="lg"
-                className="h-13 px-10 text-base font-semibold rounded-2xl shadow-lg shadow-primary/25 gap-2"
+                className="h-13 px-10 text-base font-semibold rounded-2xl gap-2 bg-gradient-to-r from-primary to-violet-500 border-0 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 hover:scale-[1.02] transition-all duration-200"
                 onClick={handleAnalyze}
                 disabled={!jobDescription.trim() || !resumeText.trim()}
               >
@@ -842,7 +856,7 @@ export default function Home() {
               <Button
                 size="lg"
                 variant="outline"
-                className="h-13 px-10 text-base font-semibold rounded-2xl gap-2 border-primary/40 hover:border-primary hover:bg-primary/5"
+                className="h-13 px-10 text-base font-semibold rounded-2xl gap-2 border-primary/30 hover:border-primary hover:bg-primary/5"
                 onClick={handleTailorResume}
                 disabled={!jobDescription.trim() || !resumeText.trim() || tailorMutation.isPending}
               >
@@ -858,7 +872,7 @@ export default function Home() {
 
         {/* ── Results View ── */}
         {analysisResult && !analyzeMutation.isPending && (
-          <div ref={resultsRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div ref={resultsRef} className="space-y-6 animate-fadeInUp">
             {/* Top bar */}
             <div className="flex items-center justify-between">
               <Button variant="ghost" size="sm" onClick={() => setAnalysisResult(null)} className="gap-2">
@@ -872,19 +886,23 @@ export default function Home() {
             </div>
 
             {/* ── Score Card ── */}
-            <Card className="overflow-hidden border-border shadow-lg">
-              <div className="relative bg-gradient-to-br from-card to-muted/30 p-8">
+            <Card className="overflow-hidden border-border/30 shadow-xl">
+              <div className="relative bg-gradient-to-br from-card via-card to-muted/20 p-8">
+                {/* Decorative orbs inside score card */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/[0.04] rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-violet-500/[0.03] rounded-full blur-3xl translate-y-1/2 -translate-x-1/3 pointer-events-none" />
+
                 <div className="absolute top-4 right-4">
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs bg-card/50 backdrop-blur-sm">
                     {analysisResult.matchedKeywords?.length || 0} matched · {analysisResult.missingKeywords?.length || 0} missing
                   </Badge>
                 </div>
-                <div className="flex flex-col lg:flex-row items-center gap-8">
+                <div className="flex flex-col lg:flex-row items-center gap-8 relative">
                   <div className="flex-shrink-0">
                     <ScoreGauge score={analysisResult.matchScore} />
                   </div>
                   <div className="flex-1 w-full">
-                    <h2 className="text-xl font-bold mb-1">ATS Compatibility Score</h2>
+                    <h2 className="text-xl font-bold mb-1 tracking-tight">ATS Compatibility Score</h2>
                     <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
                       {analysisResult.matchScore >= 90
                         ? "Excellent! Your resume is highly optimized for this role. You're in the top tier of applicants."
@@ -909,18 +927,19 @@ export default function Home() {
 
             {/* ── Keywords ── */}
             <div className="grid md:grid-cols-2 gap-4">
-              <Card className="border-green-200/60 dark:border-green-800/40 shadow-sm">
+              <Card className="border-emerald-500/15 overflow-hidden">
+                <div className="h-0.5 w-full bg-gradient-to-r from-emerald-500 to-teal-500" />
                 <CardHeader className="pb-3 pt-4 px-5">
                   <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                    <span className="flex items-center gap-2"><Check className="w-4 h-4 text-green-600" />Keywords You Have</span>
-                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 hover:bg-green-100 text-xs font-semibold">{analysisResult.matchedKeywords?.length || 0}</Badge>
+                    <span className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" />Keywords You Have</span>
+                    <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 text-xs font-semibold">{analysisResult.matchedKeywords?.length || 0}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-5 pb-5">
                   <div className="flex flex-wrap gap-1.5">
                     {analysisResult.matchedKeywords?.length > 0
                       ? analysisResult.matchedKeywords.map((kw: string, i: number) => (
-                          <span key={i} className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300">
+                          <span key={i} className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/15 text-emerald-400 transition-colors">
                             <Check className="w-3 h-3" />{kw}
                           </span>
                         ))
@@ -929,18 +948,19 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              <Card className="border-red-200/60 dark:border-red-800/40 shadow-sm">
+              <Card className="border-rose-500/15 overflow-hidden">
+                <div className="h-0.5 w-full bg-gradient-to-r from-rose-500 to-pink-500" />
                 <CardHeader className="pb-3 pt-4 px-5">
                   <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                    <span className="flex items-center gap-2"><X className="w-4 h-4 text-red-500" />Missing Keywords</span>
-                    <Badge className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 hover:bg-red-100 text-xs font-semibold">{analysisResult.missingKeywords?.length || 0}</Badge>
+                    <span className="flex items-center gap-2"><X className="w-4 h-4 text-rose-500" />Missing Keywords</span>
+                    <Badge className="bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/10 text-xs font-semibold">{analysisResult.missingKeywords?.length || 0}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-5 pb-5">
                   <div className="flex flex-wrap gap-1.5">
                     {analysisResult.missingKeywords?.length > 0
                       ? analysisResult.missingKeywords.map((kw: string, i: number) => (
-                          <span key={i} className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-red-50 border border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300 cursor-pointer hover:bg-red-100 transition-colors"
+                          <span key={i} className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/15 text-rose-400 cursor-pointer hover:bg-rose-500/20 transition-colors"
                             onClick={() => navigator.clipboard.writeText(kw)}>
                             {kw}
                           </span>
@@ -956,22 +976,24 @@ export default function Home() {
 
             {/* ── Bullet Rewrites ── */}
             {analysisResult.weakBullets?.length > 0 && (
-              <Card className="border-border shadow-sm overflow-hidden">
-                <CardHeader className="bg-muted/40 border-b border-border px-6 py-4">
+              <Card className="overflow-hidden">
+                <CardHeader className="bg-muted/20 border-b border-border/40 px-6 py-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-base flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-primary" />
+                        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Zap className="w-3.5 h-3.5 text-primary" />
+                        </div>
                         Bullet Point Rewrites
                       </CardTitle>
-                      <CardDescription className="text-xs mt-0.5">
+                      <CardDescription className="text-xs mt-1 ml-9">
                         {analysisResult.weakBullets.length} bullets strengthened with action verbs and metrics
                       </CardDescription>
                     </div>
                     <button
                       onClick={handleCopyAll}
-                      className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all
-                        ${copiedAll ? "bg-green-50 border-green-200 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300" : "border-border hover:border-primary hover:text-primary"}`}
+                      className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all duration-200
+                        ${copiedAll ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "border-border/60 hover:border-primary/40 hover:text-primary"}`}
                     >
                       {copiedAll ? <><Check className="w-3.5 h-3.5" /> Copied all</> : <><Copy className="w-3.5 h-3.5" /> Copy all</>}
                     </button>
@@ -980,22 +1002,22 @@ export default function Home() {
                 <CardContent className="p-0">
                   <Accordion type="single" collapsible className="w-full">
                     {analysisResult.weakBullets.map((bullet: any, i: number) => (
-                      <AccordionItem key={i} value={`bullet-${i}`} className="border-b last:border-0">
+                      <AccordionItem key={i} value={`bullet-${i}`} className="border-b border-border/30 last:border-0">
                         <AccordionTrigger className="hover:no-underline px-6 py-4 text-left">
                           <div className="flex items-center gap-3 pr-4">
-                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                            <span className="flex-shrink-0 w-6 h-6 rounded-lg bg-muted/60 text-muted-foreground text-xs font-bold flex items-center justify-center">{i + 1}</span>
                             <span className="text-sm text-muted-foreground line-clamp-1 flex-1">{bullet.original}</span>
                           </div>
                         </AccordionTrigger>
                         <AccordionContent className="px-6 pb-5 pt-1">
                           <div className="space-y-3 pl-9">
-                            <div className="bg-muted/50 border border-border rounded-xl p-4 relative">
-                              <span className="absolute -top-2.5 left-3 bg-muted border border-border text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Before</span>
+                            <div className="bg-muted/30 border border-border/40 rounded-xl p-4 relative">
+                              <span className="absolute -top-2.5 left-3 bg-muted border border-border/60 text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Before</span>
                               <p className="text-sm text-muted-foreground leading-relaxed mt-1">{bullet.original}</p>
                             </div>
-                            <div className="bg-green-50 border border-green-200 rounded-xl p-4 relative dark:bg-green-900/20 dark:border-green-700/50">
-                              <span className="absolute -top-2.5 left-3 bg-green-100 border border-green-200 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider dark:bg-green-800 dark:text-green-200 dark:border-green-600">Improved</span>
-                              <p className="text-sm text-green-900 dark:text-green-100 font-medium leading-relaxed mt-1">{bullet.improved}</p>
+                            <div className="bg-emerald-500/[0.06] border border-emerald-500/15 rounded-xl p-4 relative">
+                              <span className="absolute -top-2.5 left-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Improved</span>
+                              <p className="text-sm text-emerald-300 dark:text-emerald-300 font-medium leading-relaxed mt-1">{bullet.improved}</p>
                               <div className="mt-3 flex justify-end">
                                 <CopyButton text={bullet.improved} label="Copy improved" />
                               </div>
@@ -1011,24 +1033,27 @@ export default function Home() {
 
             {/* ── Red Flags ── */}
             {analysisResult.redFlags?.length > 0 && (
-              <Card className="border-amber-200/70 dark:border-amber-700/40 shadow-sm">
+              <Card className="border-amber-500/15 overflow-hidden">
+                <div className="h-0.5 w-full bg-gradient-to-r from-amber-500 to-orange-500" />
                 <CardHeader className="pb-3 px-6 pt-5">
-                  <CardTitle className="text-base flex items-center gap-2 text-amber-900 dark:text-amber-300">
-                    <AlertTriangle className="w-4 h-4 text-amber-500" />
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                    </div>
                     Recruiter Red Flags
-                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 hover:bg-amber-100 ml-auto text-xs">{analysisResult.redFlags.length}</Badge>
+                    <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/10 ml-auto text-xs">{analysisResult.redFlags.length}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-6 pb-5">
                   <div className="space-y-3">
                     {analysisResult.redFlags.map((flag: any, i: number) => (
-                      <div key={i} className="flex items-start gap-3 bg-amber-50/60 dark:bg-amber-900/10 border border-amber-200/60 dark:border-amber-700/30 rounded-xl p-4">
-                        <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-800/40 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      <div key={i} className="flex items-start gap-3 bg-amber-500/[0.04] border border-amber-500/10 rounded-xl p-4 transition-colors hover:bg-amber-500/[0.06]">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
                         </div>
                         <div>
-                          <p className="font-semibold text-sm text-amber-900 dark:text-amber-200">{flag.issue}</p>
-                          <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 leading-relaxed">{flag.fix}</p>
+                          <p className="font-semibold text-sm">{flag.issue}</p>
+                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{flag.fix}</p>
                         </div>
                       </div>
                     ))}
@@ -1039,22 +1064,24 @@ export default function Home() {
 
             {/* ── AI Summary ── */}
             {analysisResult.summary && (
-              <Card className="border-border shadow-sm overflow-hidden">
+              <Card className="overflow-hidden">
                 <div className="h-1 w-full bg-gradient-to-r from-primary via-violet-500 to-emerald-500" />
                 <CardHeader className="px-6 pt-5 pb-4">
                   <div className="flex items-start justify-between gap-4">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-primary" />
+                      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                      </div>
                       AI Feedback Summary
                     </CardTitle>
                     <div className="text-right flex-shrink-0">
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Confidence</p>
                       <Badge className={
                         analysisResult.summary.confidenceLevel === "High"
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                           : analysisResult.summary.confidenceLevel === "Medium"
-                          ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
-                          : "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300"
+                          ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                          : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                       }>{analysisResult.summary.confidenceLevel}</Badge>
                     </div>
                   </div>
@@ -1071,7 +1098,7 @@ export default function Home() {
                         <p className="text-sm leading-relaxed text-foreground/80">{content}</p>
                       </div>
                     ))}
-                    <div className="pt-4 border-t border-border">
+                    <div className="pt-4 border-t border-border/40">
                       <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Final Recommendation</h4>
                       <p className="text-sm leading-relaxed font-medium text-foreground">{analysisResult.summary.finalRecommendation}</p>
                     </div>
@@ -1081,16 +1108,18 @@ export default function Home() {
             )}
 
             {/* ── Cover Letter Generator ── */}
-            <Card className="border-indigo-200/60 dark:border-indigo-800/40 shadow-sm overflow-hidden">
-              <div className="h-1 w-full bg-gradient-to-r from-indigo-500 to-violet-500" />
+            <Card className="border-indigo-500/15 overflow-hidden">
+              <div className="h-0.5 w-full bg-gradient-to-r from-indigo-500 to-violet-500" />
               <CardHeader className="px-6 pt-5 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-indigo-500" />
+                      <div className="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                        <Mail className="w-3.5 h-3.5 text-indigo-400" />
+                      </div>
                       Cover Letter Generator
                     </CardTitle>
-                    <CardDescription className="text-xs mt-0.5">
+                    <CardDescription className="text-xs mt-1 ml-9">
                       AI writes a tailored cover letter matching this specific role
                     </CardDescription>
                   </div>
@@ -1099,7 +1128,7 @@ export default function Home() {
                       onClick={handleGenerateCoverLetter}
                       disabled={coverLetterMutation.isPending}
                       size="sm"
-                      className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                      className="gap-2 bg-gradient-to-r from-indigo-500 to-violet-500 border-0 shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 text-white"
                     >
                       {coverLetterMutation.isPending
                         ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Writing...</>
@@ -1126,7 +1155,7 @@ export default function Home() {
                 <CardContent className="px-6 pb-6">
                   <div className="space-y-2">
                     {[80, 95, 70, 88, 60, 75].map((w, i) => (
-                      <Skeleton key={i} className="h-4 rounded" style={{ width: `${w}%` }} />
+                      <Skeleton key={i} className="h-4 rounded shimmer" style={{ width: `${w}%` }} />
                     ))}
                   </div>
                 </CardContent>
@@ -1134,7 +1163,7 @@ export default function Home() {
 
               {coverLetter && (
                 <CardContent className="px-6 pb-6">
-                  <div className="bg-muted/30 border border-border rounded-xl p-5">
+                  <div className="bg-muted/20 border border-border/40 rounded-xl p-5">
                     <pre className="text-sm leading-relaxed whitespace-pre-wrap font-sans text-foreground/90">{coverLetter}</pre>
                   </div>
                   <div className="flex gap-2 mt-4">
@@ -1170,8 +1199,8 @@ export default function Home() {
 
               {!coverLetter && !coverLetterMutation.isPending && (
                 <CardContent className="px-6 pb-6">
-                  <div className="border border-dashed border-indigo-200 dark:border-indigo-700/40 rounded-xl p-6 text-center">
-                    <Mail className="w-8 h-8 text-indigo-300 mx-auto mb-2" />
+                  <div className="border border-dashed border-indigo-500/20 rounded-xl p-6 text-center">
+                    <Mail className="w-8 h-8 text-indigo-500/30 mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Click Generate to create a personalized cover letter for this role.</p>
                     <p className="text-xs text-muted-foreground mt-1">Takes about 15–20 seconds.</p>
                   </div>
@@ -1180,16 +1209,18 @@ export default function Home() {
             </Card>
 
             {/* ── Career Roadmap Generator ── */}
-            <Card className="border-emerald-200/60 dark:border-emerald-800/40 shadow-sm overflow-hidden">
-              <div className="h-1 w-full bg-gradient-to-r from-emerald-500 to-teal-500" />
+            <Card className="border-emerald-500/15 overflow-hidden">
+              <div className="h-0.5 w-full bg-gradient-to-r from-emerald-500 to-teal-500" />
               <CardHeader className="px-6 pt-5 pb-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Map className="w-4 h-4 text-emerald-500" />
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                        <Map className="w-3.5 h-3.5 text-emerald-400" />
+                      </div>
                       Career Roadmap
                     </CardTitle>
-                    <CardDescription className="text-xs mt-0.5">
+                    <CardDescription className="text-xs mt-1 ml-9">
                       Personalized plan to close skill gaps and land this role
                     </CardDescription>
                   </div>
@@ -1198,7 +1229,7 @@ export default function Home() {
                       onClick={handleGenerateRoadmap}
                       disabled={roadmapMutation.isPending}
                       size="sm"
-                      className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 border-0 shadow-md shadow-emerald-500/20 hover:shadow-lg hover:shadow-emerald-500/30 text-white"
                     >
                       {roadmapMutation.isPending
                         ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Planning...</>
@@ -1220,30 +1251,30 @@ export default function Home() {
 
               {roadmapMutation.isPending && !roadmap && (
                 <CardContent className="px-6 pb-6 space-y-3">
-                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-xl shimmer" />)}
                 </CardContent>
               )}
 
               {roadmap && (
                 <CardContent className="px-6 pb-6 space-y-4">
                   {/* Roadmap header */}
-                  <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200/60 dark:border-emerald-700/40 rounded-xl p-4">
+                  <div className="bg-emerald-500/[0.06] border border-emerald-500/15 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-bold text-sm text-emerald-900 dark:text-emerald-200">{roadmap.targetRole}</h3>
-                      <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-800/40 text-emerald-800 dark:text-emerald-300">
+                      <h3 className="font-bold text-sm">{roadmap.targetRole}</h3>
+                      <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                         <Clock className="w-3 h-3" />
                         {roadmap.estimatedTimeToReady}
                       </span>
                     </div>
-                    <p className="text-xs text-emerald-700 dark:text-emerald-400 leading-relaxed">{roadmap.summary}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{roadmap.summary}</p>
                   </div>
 
                   {/* Phases */}
                   <div className="space-y-3">
                     {roadmap.phases?.map((phase: any, i: number) => (
-                      <div key={i} className="border border-border rounded-xl overflow-hidden">
-                        <div className="flex items-center gap-3 bg-muted/40 px-4 py-3">
-                          <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-800/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      <div key={i} className="border border-border/40 rounded-xl overflow-hidden transition-colors hover:border-border/60">
+                        <div className="flex items-center gap-3 bg-muted/20 px-4 py-3">
+                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
                             {i + 1}
                           </div>
                           <div className="flex-1">
@@ -1273,7 +1304,7 @@ export default function Home() {
                               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Resources</p>
                               <div className="flex flex-wrap gap-1.5">
                                 {phase.resources.map((res: string, j: number) => (
-                                  <span key={j} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-muted border border-border text-muted-foreground">
+                                  <span key={j} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-muted/40 border border-border/40 text-muted-foreground">
                                     <ExternalLink className="w-2.5 h-2.5" />
                                     {res}
                                   </span>
@@ -1290,8 +1321,8 @@ export default function Home() {
 
               {!roadmap && !roadmapMutation.isPending && (
                 <CardContent className="px-6 pb-6">
-                  <div className="border border-dashed border-emerald-200 dark:border-emerald-700/40 rounded-xl p-6 text-center">
-                    <Map className="w-8 h-8 text-emerald-300 mx-auto mb-2" />
+                  <div className="border border-dashed border-emerald-500/20 rounded-xl p-6 text-center">
+                    <Map className="w-8 h-8 text-emerald-500/30 mx-auto mb-2" />
                     <p className="text-sm text-muted-foreground">Get a step-by-step plan to close your skill gaps and land this role.</p>
                     <p className="text-xs text-muted-foreground mt-1">Based on your missing keywords and current score.</p>
                   </div>
@@ -1301,13 +1332,15 @@ export default function Home() {
 
             {/* ── Download Resume ── */}
             {resumeText && (
-              <Card className="border-border shadow-sm">
+              <Card>
                 <CardHeader className="px-6 pt-5 pb-4">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <FileDown className="w-4 h-4 text-primary" />
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <FileDown className="w-3.5 h-3.5 text-primary" />
+                    </div>
                     Download Resume
                   </CardTitle>
-                  <CardDescription className="text-xs">Export your resume in different formats</CardDescription>
+                  <CardDescription className="text-xs ml-9">Export your resume in different formats</CardDescription>
                 </CardHeader>
                 <CardContent className="px-6 pb-5">
                   <div className="flex flex-wrap gap-3">
@@ -1337,7 +1370,7 @@ export default function Home() {
 
             {/* Bottom actions */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button className="flex-1 gap-2" onClick={handleDownloadReport}>
+              <Button className="flex-1 gap-2 bg-gradient-to-r from-primary to-violet-500 border-0 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30" onClick={handleDownloadReport}>
                 <Download className="w-4 h-4" /> Download Full Report
               </Button>
               <Button variant="outline" className="flex-1 gap-2" onClick={() => setAnalysisResult(null)}>
