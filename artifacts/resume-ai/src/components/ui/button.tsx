@@ -5,27 +5,27 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer",
+  "inline-flex items-center justify-center gap-2.5 whitespace-nowrap rounded-none uppercase tracking-tighter font-bold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFE104] focus-visible:ring-offset-2 focus-visible:ring-offset-[#09090B] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0 cursor-pointer select-none",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground border border-primary-border shadow-md hover:shadow-lg hover:brightness-110 active:scale-[0.98]",
+          "bg-[#DFE104] text-black border-2 border-[#DFE104] hover:scale-105 active:scale-95 shadow-none",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-sm border border-destructive-border hover:brightness-110 active:scale-[0.98]",
+          "bg-[#EF4444] text-white border-2 border-[#EF4444] hover:scale-105 active:scale-95 shadow-none",
         outline:
-          "border border-border bg-card/50 shadow-xs hover:bg-accent hover:border-primary/30 hover:shadow-sm active:scale-[0.98]",
+          "border-2 border-[#3F3F46] bg-transparent text-[#FAFAFA] hover:bg-[#FAFAFA] hover:text-black hover:border-[#FAFAFA] active:scale-95",
         secondary:
-          "border bg-secondary text-secondary-foreground border-secondary-border hover:bg-secondary/80 active:scale-[0.98]",
+          "border-2 border-[#3F3F46] bg-[#27272A] text-[#FAFAFA] hover:bg-[#DFE104] hover:text-black hover:border-[#DFE104] active:scale-95",
         ghost:
-          "border border-transparent hover:bg-accent/60 active:scale-[0.98]",
-        link: "text-primary underline-offset-4 hover:underline",
+          "border-2 border-transparent bg-transparent text-[#FAFAFA] hover:text-[#DFE104] active:scale-95",
+        link: "text-[#DFE104] underline-offset-4 hover:underline",
       },
       size: {
-        default: "min-h-10 px-5 py-2.5",
-        sm: "min-h-8 rounded-lg px-3.5 text-xs",
-        lg: "min-h-11 rounded-xl px-8 text-base",
-        icon: "h-10 w-10 rounded-xl",
+        default: "h-14 px-8 text-base",
+        sm: "h-10 px-4 text-xs",
+        lg: "h-20 px-12 text-lg md:text-xl",
+        icon: "h-14 w-14 text-base",
       },
     },
     defaultVariants: {
@@ -56,3 +56,4 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button"
 
 export { Button, buttonVariants }
+

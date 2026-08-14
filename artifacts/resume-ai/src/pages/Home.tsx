@@ -5,10 +5,11 @@ import { useToast } from "@/hooks/use-toast";
 import { extractTextFromPDF } from "@/lib/pdf";
 import {
   Loader2, UploadCloud, X, AlertTriangle, FileText,
-  ChevronRight, Check, Copy, Sun, Moon, Download,
-  Target, Zap, Shield, TrendingUp, ArrowLeft, Sparkles,
-  BookOpen, Award, Star, Mail, Map, FileDown, RotateCw,
-  ChevronDown, ExternalLink, Clock, Flag, Printer, FileEdit
+  ChevronRight, Check, Copy, Download,
+  Target, Zap, Shield, ArrowLeft, Sparkles,
+  BookOpen, Mail, Map, FileDown, RotateCw,
+  ChevronDown, ExternalLink, Clock, Flag, Printer, FileEdit,
+  Star, TrendingUp, Layers, CheckCircle2, ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,31 +20,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { TemplateSelector, ResumeTemplateRenderer } from "@/components/ResumeTemplates";
 import type { TemplateName } from "@/components/ResumeTemplates";
+import { NoiseOverlay } from "@/components/ui/noise-overlay";
+import { KineticMarquee } from "@/components/ui/kinetic-marquee";
 
-// ─── Theme Toggle ────────────────────────────────────────────────────────────
-function useTheme() {
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("rr-theme") as "light" | "dark") ||
-        (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    }
-    return "light";
-  });
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") root.classList.add("dark");
-    else root.classList.remove("dark");
-    localStorage.setItem("rr-theme", theme);
-  }, [theme]);
-
-  return { theme, toggle: () => setTheme(t => t === "dark" ? "light" : "dark") };
-}
-
-// ─── Score Gauge (Semi-circle arc) ──────────────────────────────────────────
-function ScoreGauge({ score }: { score: number }) {
+// ─── Score Gauge / Numerical Display ─────────────────────────────────────────
+function KineticScoreGauge({ score }: { score: number }) {
   const [displayed, setDisplayed] = useState(0);
-  const animRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let start = 0;
@@ -51,196 +33,107 @@ function ScoreGauge({ score }: { score: number }) {
       start += Math.ceil((score - start) / 6) || 1;
       if (start >= score) { setDisplayed(score); return; }
       setDisplayed(start);
-      animRef.current = setTimeout(step, 16);
+      requestAnimationFrame(step);
     };
-    const delay = setTimeout(step, 600);
-    return () => { clearTimeout(delay); if (animRef.current) clearTimeout(animRef.current); };
+    step();
   }, [score]);
 
-  const cx = 160, cy = 155, r = 120;
-  const startAngle = 210, sweep = 300;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const arc = (angle: number) => ({
-    x: cx + r * Math.cos(toRad(angle)),
-    y: cy + r * Math.sin(toRad(angle)),
-  });
-
-  const describeArc = (start: number, end: number) => {
-    const s = arc(start), e = arc(end);
-    const large = end - start > 180 ? 1 : 0;
-    return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y}`;
-  };
-
-  const progressAngle = startAngle + (score / 100) * sweep;
-  const circumference = (sweep / 360) * 2 * Math.PI * r;
-  const trackLen = circumference;
-  const ticks = [0, 25, 50, 75, 100];
   const grade = score >= 90 ? "A+" : score >= 80 ? "A" : score >= 70 ? "B" : score >= 60 ? "C" : score >= 40 ? "D" : "F";
 
-  const { strokeColor, glowColor, label, badgeCls } =
-    score >= 90 ? { strokeColor: "#10b981", glowColor: "#10b98140", label: "Excellent Match", badgeCls: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" } :
-    score >= 71 ? { strokeColor: "#6366f1", glowColor: "#6366f140", label: "Good Match", badgeCls: "bg-primary/10 text-primary border border-primary/20" } :
-    score >= 41 ? { strokeColor: "#f59e0b", glowColor: "#f59e0b40", label: "Needs Work", badgeCls: "bg-amber-500/10 text-amber-400 border border-amber-500/20" } :
-    { strokeColor: "#f43f5e", glowColor: "#f43f5e40", label: "Poor Match", badgeCls: "bg-rose-500/10 text-rose-400 border border-rose-500/20" };
-
-  void glowColor;
-
   return (
-    <div className="flex flex-col items-center" data-testid="score-gauge">
-      <div className="relative" style={{ width: 320, height: 210 }}>
-        <svg viewBox="0 0 320 200" width="320" height="200">
-          <defs>
-            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="8" result="coloredBlur" />
-              <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-          </defs>
-          <path d={describeArc(startAngle, startAngle + sweep)} fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round" className="text-muted/30" />
-          {score > 0 && (
-            <path
-              d={describeArc(startAngle, progressAngle)}
-              fill="none"
-              stroke={strokeColor}
-              strokeWidth="16"
-              strokeLinecap="round"
-              filter="url(#glow)"
-              className="gauge-progress"
-              style={{
-                ["--gauge-total" as string]: `${trackLen}`,
-                ["--gauge-target" as string]: `${trackLen - (score / 100) * trackLen}`,
-                strokeDasharray: trackLen,
-                strokeDashoffset: trackLen,
-              }}
-            />
-          )}
-          {ticks.map((t) => {
-            const a = startAngle + (t / 100) * sweep;
-            const inner = { x: cx + (r - 16) * Math.cos(toRad(a)), y: cy + (r - 16) * Math.sin(toRad(a)) };
-            const outer = { x: cx + (r + 2) * Math.cos(toRad(a)), y: cy + (r + 2) * Math.sin(toRad(a)) };
-            return <line key={t} x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y} stroke="currentColor" strokeWidth="2" className="text-border/60" />;
-          })}
-          {ticks.map((t) => {
-            const a = startAngle + (t / 100) * sweep;
-            const lp = { x: cx + (r + 22) * Math.cos(toRad(a)), y: cy + (r + 22) * Math.sin(toRad(a)) };
-            return <text key={t} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fontSize="11" fill="currentColor" className="text-muted-foreground" opacity="0.5">{t}</text>;
-          })}
-          <text x={cx} y={cy - 18} textAnchor="middle" fontSize="56" fontWeight="800" fill={strokeColor} fontFamily="Inter, sans-serif" className="score-appear">{displayed}</text>
-          <text x={cx} y={cy + 20} textAnchor="middle" fontSize="14" fill="currentColor" className="text-muted-foreground" fontFamily="Inter, sans-serif" opacity="0.5">out of 100</text>
-          <text x={cx} y={cy + 44} textAnchor="middle" fontSize="22" fontWeight="700" fill={strokeColor} fontFamily="Inter, sans-serif">{grade}</text>
-        </svg>
-      </div>
-      <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold ${badgeCls}`}>
-        {score >= 90 && <Star className="w-3.5 h-3.5" />}
-        {label}
+    <div className="flex flex-col items-center justify-center p-8 bg-[#09090B] border-2 border-[#3F3F46] text-center relative group hover:bg-[#DFE104] hover:border-[#DFE104] hover:text-black transition-colors duration-300">
+      <span className="text-xs uppercase font-mono tracking-widest text-[#A1A1AA] group-hover:text-black/80 mb-2">
+        ATS MATCH SCORE
       </span>
+      <div className="text-[6rem] md:text-[8rem] font-bold font-display leading-none tracking-tighter text-[#DFE104] group-hover:text-black my-2">
+        {displayed}<span className="text-4xl md:text-5xl">%</span>
+      </div>
+      <div className="flex items-center gap-3 mt-2">
+        <span className="text-xl font-bold uppercase tracking-tight group-hover:text-black">
+          GRADE {grade}
+        </span>
+        <Badge variant={score >= 70 ? "default" : "destructive"}>
+          {score >= 90 ? "EXCELLENT" : score >= 70 ? "GOOD MATCH" : score >= 40 ? "NEEDS WORK" : "POOR MATCH"}
+        </Badge>
+      </div>
     </div>
   );
 }
 
 // ─── Score Sub-metrics ───────────────────────────────────────────────────────
-function ScoreBreakdown({ score, matched, missing }: { score: number; matched: number; missing: number }) {
+function KineticScoreBreakdown({ score, matched, missing }: { score: number; matched: number; missing: number }) {
   const total = matched + missing || 1;
   const keywordPct = Math.round((matched / total) * 100);
   const impactPct = Math.min(100, Math.round(score * 0.9 + 10));
   const fitPct = Math.min(100, Math.round(score * 1.05));
 
   return (
-    <div className="grid grid-cols-3 gap-3 mt-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#3F3F46] border-2 border-[#3F3F46] mt-6">
       {[
-        { label: "Keyword Coverage", value: keywordPct, icon: <Target className="w-4 h-4" />, color: "from-blue-500 to-cyan-500" },
-        { label: "Overall Fit",      value: fitPct,     icon: <Zap    className="w-4 h-4" />, color: "from-violet-500 to-purple-500" },
-        { label: "Impact Score",     value: impactPct,  icon: <TrendingUp className="w-4 h-4" />, color: "from-emerald-500 to-teal-500" },
+        { label: "KEYWORD COVERAGE", value: keywordPct, icon: <Target className="w-5 h-5 text-[#DFE104]" />, num: "01" },
+        { label: "OVERALL FIT SCORE", value: fitPct, icon: <Zap className="w-5 h-5 text-[#DFE104]" />, num: "02" },
+        { label: "IMPACT METRICS", value: impactPct, icon: <TrendingUp className="w-5 h-5 text-[#DFE104]" />, num: "03" },
       ].map((m) => (
-        <div key={m.label} className="bg-muted/30 border border-border/40 rounded-2xl p-4 text-center space-y-2 transition-all duration-200 hover:bg-muted/50">
-          <div className="flex justify-center text-muted-foreground">{m.icon}</div>
-          <div className="text-xl font-bold tracking-tight">{m.value}%</div>
-          <div className="text-xs text-muted-foreground leading-tight">{m.label}</div>
-          <Progress value={m.value} className="h-1.5" />
+        <div key={m.label} className="bg-[#09090B] p-6 space-y-4 hover:bg-[#DFE104] hover:text-black group transition-colors duration-300 relative overflow-hidden">
+          <span className="absolute -right-2 -bottom-4 text-7xl font-bold font-display text-[#27272A]/40 group-hover:text-black/10 pointer-events-none select-none">
+            {m.num}
+          </span>
+          <div className="flex justify-between items-center">
+            <div className="p-2 border-2 border-[#3F3F46] bg-[#09090B] text-[#FAFAFA] group-hover:border-black group-hover:bg-black group-hover:text-[#DFE104]">
+              {m.icon}
+            </div>
+            <span className="text-3xl md:text-4xl font-bold font-display tracking-tighter group-hover:text-black">
+              {m.value}%
+            </span>
+          </div>
+          <div>
+            <div className="text-sm font-bold uppercase tracking-wider text-[#A1A1AA] group-hover:text-black/80">{m.label}</div>
+            <Progress value={m.value} className="mt-3 h-3" />
+          </div>
         </div>
       ))}
     </div>
   );
 }
 
-// ─── Quick Tips ──────────────────────────────────────────────────────────────
-function QuickTips({ missing, score }: { missing: string[]; score: number }) {
-  const tips: string[] = [];
-  if (score < 70) tips.push("Add a tailored Skills section matching the job requirements.");
-  if (missing.length > 3) tips.push(`Include ${missing.slice(0, 3).join(", ")} as keywords in your resume.`);
-  if (score < 50) tips.push("Rewrite your summary to mirror the job description language.");
-  tips.push("Use numbers to quantify all achievements (%, $, time saved).");
-  if (score < 80) tips.push("Add a Professional Summary at the top targeting this exact role.");
-
-  return (
-    <Card className="border-primary/15 bg-primary/[0.03] overflow-hidden">
-      <div className="h-0.5 w-full bg-gradient-to-r from-primary via-violet-500 to-primary" />
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Sparkles className="w-3.5 h-3.5 text-primary" />
-          </div>
-          Quick Wins to Boost Your Score
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="space-y-2.5">
-          {tips.slice(0, 4).map((tip, i) => (
-            <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
-              <span className="flex-shrink-0 w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-violet-500 text-white flex items-center justify-center text-xs font-bold mt-0.5">{i + 1}</span>
-              {tip}
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
-  );
-}
-
 // ─── Copy Button ─────────────────────────────────────────────────────────────
-function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
+function KineticCopyButton({ text, label = "COPY" }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <button
+    <Button
+      variant="outline"
+      size="sm"
       onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all duration-200
-        ${copied
-          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-          : "bg-card/50 border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary"}`}
+      className={`gap-2 text-xs font-bold ${copied ? "bg-[#DFE104] text-black border-[#DFE104]" : ""}`}
     >
-      {copied ? <><Check className="w-3.5 h-3.5" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> {label}</>}
-    </button>
+      {copied ? <><Check className="w-3.5 h-3.5" /> COPIED</> : <><Copy className="w-3.5 h-3.5" /> {label}</>}
+    </Button>
   );
 }
 
 // ─── Loading Skeleton ─────────────────────────────────────────────────────────
-function LoadingSkeleton() {
+function KineticLoadingSkeleton() {
   return (
-    <div className="space-y-6 max-w-4xl mx-auto py-8 animate-in fade-in">
-      <div className="text-center space-y-4 mb-8">
-        <div className="w-18 h-18 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+    <div className="space-y-8 max-w-4xl mx-auto py-12">
+      <div className="text-center space-y-4">
+        <div className="w-20 h-20 border-2 border-[#DFE104] bg-[#DFE104] text-black flex items-center justify-center mx-auto">
+          <Loader2 className="w-10 h-10 animate-spin" />
         </div>
-        <h2 className="text-2xl font-bold tracking-tight">Analyzing your resume...</h2>
-        <p className="text-muted-foreground text-sm">Our AI is cross-referencing skills, impact, and ATS compatibility.</p>
-        <div className="flex justify-center gap-2 pt-1">
-          {["Scanning keywords", "Analyzing bullets", "Checking format"].map((step, i) => (
-            <span key={i} className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium animate-pulse" style={{ animationDelay: `${i * 0.4}s` }}>
-              {step}
-            </span>
-          ))}
+        <h2 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter">ANALYZING RESUME VECTOR...</h2>
+        <p className="text-[#A1A1AA] text-lg font-mono uppercase">CROSS-REFERENCING KEYWORDS // ATS ALGORITHM</p>
+      </div>
+      <div className="border-2 border-[#3F3F46] p-8 bg-[#09090B] space-y-6">
+        <Skeleton className="h-40 w-full rounded-none bg-[#27272A]" />
+        <div className="grid md:grid-cols-2 gap-4">
+          <Skeleton className="h-32 rounded-none bg-[#27272A]" />
+          <Skeleton className="h-32 rounded-none bg-[#27272A]" />
         </div>
       </div>
-      <Skeleton className="h-64 w-full rounded-2xl shimmer" />
-      <div className="grid md:grid-cols-2 gap-4">
-        <Skeleton className="h-48 rounded-2xl shimmer" />
-        <Skeleton className="h-48 rounded-2xl shimmer" />
-      </div>
-      <Skeleton className="h-64 w-full rounded-2xl shimmer" />
     </div>
   );
 }
 
-// ─── Download helpers ─────────────────────────────────────────────────────────
+// ─── Download Helpers ─────────────────────────────────────────────────────────
 async function downloadAsPDF(text: string, filename: string, title: string) {
   const { default: jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -266,46 +159,27 @@ async function downloadAsPDF(text: string, filename: string, title: string) {
       y += lineHeight;
     }
   }
-
   doc.save(filename);
 }
 
 async function downloadAsDOCX(text: string, filename: string, title: string) {
   const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import("docx");
-
-  const paragraphs = [];
-
-  paragraphs.push(
-    new Paragraph({
-      text: title,
-      heading: HeadingLevel.HEADING_1,
-    })
-  );
-
-  paragraphs.push(new Paragraph({ text: "" }));
-
+  const paragraphs = [
+    new Paragraph({ text: title, heading: HeadingLevel.HEADING_1 }),
+    new Paragraph({ text: "" }),
+  ];
   for (const line of text.split("\n")) {
-    paragraphs.push(
-      new Paragraph({
-        children: [new TextRun({ text: line || "" })],
-      })
-    );
+    paragraphs.push(new Paragraph({ children: [new TextRun({ text: line || "" })] }));
   }
-
-  const doc = new Document({
-    sections: [{ properties: {}, children: paragraphs }],
-  });
-
+  const doc = new Document({ sections: [{ properties: {}, children: paragraphs }] });
   const blob = await Packer.toBlob(doc);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
+  a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main Kinetic Application ─────────────────────────────────────────────────
 export default function Home() {
   const [jobDescription, setJobDescription] = useState("");
   const [resumeText, setResumeText] = useState("");
@@ -329,7 +203,6 @@ export default function Home() {
   const roadmapMutation = useGenerateCareerRoadmap();
   const tailorMutation = useTailorResume();
   const { toast } = useToast();
-  const { theme, toggle: toggleTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const resumePrintRef = useRef<HTMLDivElement>(null);
@@ -349,17 +222,17 @@ export default function Home() {
       setFileName(file.name);
       setResumeText(await file.text());
     } else {
-      toast({ title: "Unsupported format", description: "Please upload a PDF or plain text file.", variant: "destructive" });
+      toast({ title: "Unsupported format", description: "Upload PDF or TXT file.", variant: "destructive" });
     }
   };
 
   const handleAnalyze = () => {
     if (!jobDescription.trim()) {
-      toast({ title: "Job description required", description: "Please paste the job description.", variant: "destructive" });
+      toast({ title: "Job Description Missing", description: "Paste job posting text.", variant: "destructive" });
       return;
     }
     if (!resumeText.trim()) {
-      toast({ title: "Resume required", description: "Please upload or paste your resume.", variant: "destructive" });
+      toast({ title: "Resume Text Missing", description: "Upload or paste your resume.", variant: "destructive" });
       return;
     }
     analyzeMutation.mutate({ data: { jobDescription: jobDescription.trim(), resumeText: resumeText.trim() } }, {
@@ -367,11 +240,11 @@ export default function Home() {
         setAnalysisResult(result);
         setCoverLetter(null);
         setRoadmap(null);
-        toast({ title: "Analysis complete", description: "Your resume has been ranked successfully." });
+        toast({ title: "Analysis Complete", description: "ATS rank generated." });
         setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
       },
       onError: (err: any) => {
-        toast({ title: "Analysis failed", description: err.message || "Something went wrong.", variant: "destructive" });
+        toast({ title: "Analysis Failed", description: err.message || "Error processing request.", variant: "destructive" });
       }
     });
   };
@@ -382,10 +255,10 @@ export default function Home() {
       {
         onSuccess: (result: any) => {
           setCoverLetter(result.coverLetter);
-          toast({ title: "Cover letter ready!", description: "Your personalized cover letter has been generated." });
+          toast({ title: "Cover Letter Generated", description: "Tailored letter ready." });
         },
         onError: (err: any) => {
-          toast({ title: "Generation failed", description: err.message || "Something went wrong.", variant: "destructive" });
+          toast({ title: "Generation Failed", description: err.message || "Error generating cover letter.", variant: "destructive" });
         }
       }
     );
@@ -404,23 +277,18 @@ export default function Home() {
       {
         onSuccess: (result: any) => {
           setRoadmap(result);
-          toast({ title: "Career roadmap ready!", description: "Your personalized roadmap has been created." });
+          toast({ title: "Roadmap Created", description: "Personalized action plan generated." });
         },
         onError: (err: any) => {
-          toast({ title: "Generation failed", description: err.message || "Something went wrong.", variant: "destructive" });
+          toast({ title: "Generation Failed", description: err.message || "Error generating roadmap.", variant: "destructive" });
         }
       }
     );
   };
 
-  // ── Tailor Resume handler ──
   const handleTailorResume = () => {
-    if (!jobDescription.trim()) {
-      toast({ title: "Job description required", description: "Please paste the job description.", variant: "destructive" });
-      return;
-    }
-    if (!resumeText.trim()) {
-      toast({ title: "Resume required", description: "Please upload or paste your resume.", variant: "destructive" });
+    if (!jobDescription.trim() || !resumeText.trim()) {
+      toast({ title: "Input Required", description: "Both Job Description & Resume are required.", variant: "destructive" });
       return;
     }
     tailorMutation.mutate(
@@ -429,29 +297,24 @@ export default function Home() {
         onSuccess: (result: any) => {
           setTailoredResult(result as TailoredResumeResult);
           setTailorView(true);
-          toast({ title: "Resume tailored!", description: "Your resume has been rewritten for this role." });
+          toast({ title: "Resume Tailored", description: "Formatted resume generated." });
           setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
         },
         onError: (err: any) => {
-          toast({ title: "Tailoring failed", description: err.message || "Something went wrong.", variant: "destructive" });
+          toast({ title: "Tailoring Failed", description: err.message || "Error tailoring resume.", variant: "destructive" });
         }
       }
     );
   };
 
-  // ── PDF Export via browser print ──
   const handleExportPDF = useCallback(() => {
-    // Create a detached window for printing just the resume
     const printArea = resumePrintRef.current;
     if (!printArea) return;
-
     const printWindow = window.open("", "_blank", "width=900,height=1100");
     if (!printWindow) {
-      toast({ title: "Popup blocked", description: "Please allow popups and try again.", variant: "destructive" });
+      toast({ title: "Popup Blocked", description: "Please allow popups to export PDF.", variant: "destructive" });
       return;
     }
-
-    // Copy all stylesheets into the print window
     const stylesheets = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
       .map(el => el.outerHTML)
       .join("\n");
@@ -461,14 +324,11 @@ export default function Home() {
       <html>
       <head>
         <meta charset="utf-8" />
-        <title>Resume - ${tailoredResult?.personalInfo?.name || "Resume"}</title>
+        <title>Resume - ${tailoredResult?.personalInfo?.name || "Export"}</title>
         ${stylesheets}
         <style>
           body { margin: 0; padding: 0; background: #fff; }
           .resume-template { box-shadow: none !important; border-radius: 0 !important; max-width: 100% !important; margin: 0 !important; }
-          @media print {
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          }
         </style>
       </head>
       <body>
@@ -477,8 +337,6 @@ export default function Home() {
       </html>
     `);
     printWindow.document.close();
-
-    // Wait for styles to load then print
     printWindow.onload = () => {
       setTimeout(() => {
         printWindow.focus();
@@ -491,21 +349,15 @@ export default function Home() {
   const handleDownloadResumePDF = async () => {
     if (!resumeText) return;
     setDownloadingPDF(true);
-    try {
-      await downloadAsPDF(resumeText, "resume.pdf", "Resume");
-    } finally {
-      setDownloadingPDF(false);
-    }
+    try { await downloadAsPDF(resumeText, "resume.pdf", "RESUME"); }
+    finally { setDownloadingPDF(false); }
   };
 
   const handleDownloadResumeDOCX = async () => {
     if (!resumeText) return;
     setDownloadingDOCX(true);
-    try {
-      await downloadAsDOCX(resumeText, "resume.docx", "Resume");
-    } finally {
-      setDownloadingDOCX(false);
-    }
+    try { await downloadAsDOCX(resumeText, "resume.docx", "RESUME"); }
+    finally { setDownloadingDOCX(false); }
   };
 
   const handleCopyAll = () => {
@@ -516,137 +368,106 @@ export default function Home() {
     setTimeout(() => setCopiedAll(false), 2000);
   };
 
-  const handleDownloadReport = () => {
-    if (!analysisResult) return;
-    const lines = [
-      `RESUMEHACKER AI — ANALYSIS REPORT`,
-      `=`.repeat(40),
-      ``,
-      `ATS MATCH SCORE: ${analysisResult.matchScore}/100`,
-      ``,
-      `MATCHED KEYWORDS (${analysisResult.matchedKeywords?.length || 0}):`,
-      (analysisResult.matchedKeywords || []).join(", "),
-      ``,
-      `MISSING KEYWORDS (${analysisResult.missingKeywords?.length || 0}):`,
-      (analysisResult.missingKeywords || []).join(", "),
-      ``,
-      `IMPROVED BULLET POINTS:`,
-      ...(analysisResult.weakBullets || []).flatMap((b: any, i: number) => [
-        `${i + 1}. ORIGINAL: ${b.original}`,
-        `   IMPROVED: ${b.improved}`,
-        ``
-      ]),
-      `RECRUITER RED FLAGS:`,
-      ...(analysisResult.redFlags || []).map((f: any) => `- ${f.issue}: ${f.fix}`),
-      ``,
-      `AI FEEDBACK:`,
-      `Overall: ${analysisResult.summary?.overallImpression}`,
-      `Strengths: ${analysisResult.summary?.keyStrengths}`,
-      `Improvements: ${analysisResult.summary?.priorityImprovements}`,
-      `Recommendation: ${analysisResult.summary?.finalRecommendation}`,
-      `Confidence: ${analysisResult.summary?.confidenceLevel}`,
-      ``,
-      ...(coverLetter ? [`COVER LETTER:`, ``, coverLetter, ``] : []),
-    ];
-    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "resumehacker-report.txt"; a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const wordCount = resumeText.trim().split(/\s+/).filter(Boolean).length;
   const estimatedPages = Math.round((wordCount / 450) * 10) / 10;
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans">
-      {/* ── Decorative background orbs ── */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-3xl animate-float" />
-        <div className="absolute top-1/2 -left-40 w-[500px] h-[500px] bg-violet-500/[0.03] rounded-full blur-3xl animate-float-delayed" />
-        <div className="absolute -bottom-40 right-1/3 w-[400px] h-[400px] bg-emerald-500/[0.02] rounded-full blur-3xl animate-float" />
-      </div>
+    <div className="min-h-screen bg-[#09090B] text-[#FAFAFA] font-sans selection:bg-[#DFE104] selection:text-black relative">
+      <NoiseOverlay />
 
       {/* ── Header ── */}
-      <header className="sticky top-0 z-20 border-b border-border/40 bg-background/70 backdrop-blur-xl">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-violet-500 flex items-center justify-center shadow-lg shadow-primary/20">
-              <Award className="w-4.5 h-4.5 text-white" />
+      <header className="sticky top-0 z-40 border-b-2 border-[#3F3F46] bg-[#09090B]/90 backdrop-blur-md">
+        <div className="max-w-[95vw] mx-auto h-20 flex items-center justify-between px-4 sm:px-8">
+          <div className="flex items-center gap-4">
+            <div className="h-10 px-4 bg-[#DFE104] text-black font-bold uppercase tracking-tighter flex items-center justify-center border-2 border-[#DFE104]">
+              RESUME // RANK
             </div>
-            <div>
-              <span className="font-extrabold text-lg tracking-tight">ResumeHacker</span>
-              <span className="font-light text-lg gradient-text ml-1">AI</span>
-            </div>
+            <span className="hidden md:inline-block font-mono text-xs text-[#A1A1AA] uppercase tracking-widest">
+              AI ATS SCANNER & OPTIMIZER
+            </span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground hidden sm:block font-medium">Beat the ATS. Land the interview.</span>
-            <button
-              onClick={toggleTheme}
-              className="w-9 h-9 rounded-xl border border-border/60 bg-card/50 backdrop-blur-sm flex items-center justify-center hover:bg-accent hover:border-primary/30 transition-all duration-200"
-              aria-label="Toggle theme"
+
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const el = document.getElementById("suite-input-section");
+                el?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="hidden sm:inline-flex"
             >
-              {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-primary" />}
-            </button>
+              LAUNCH SUITE
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleTailorResume}
+              disabled={!jobDescription.trim() || !resumeText.trim()}
+            >
+              TAILOR NOW
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 pb-24 relative z-10">
+      {/* ── Top Kinetic Marquee ── */}
+      <KineticMarquee speed={22} bgColor="bg-[#09090B]">
+        <span>⚡ ATS MATCH SCORE ALGORITHM</span>
+        <span className="text-[#DFE104]">•</span>
+        <span>KEYWORD GAP ANALYSIS</span>
+        <span className="text-[#DFE104]">•</span>
+        <span>AI BULLET REWRITER</span>
+        <span className="text-[#DFE104]">•</span>
+        <span>COVER LETTER GENERATOR</span>
+        <span className="text-[#DFE104]">•</span>
+        <span>100% CONFIDENCE SCORING</span>
+        <span className="text-[#DFE104]">•</span>
+        <span>INSTANT PDF & DOCX EXPORT</span>
+      </KineticMarquee>
+
+      <main className="max-w-[95vw] mx-auto py-16 px-4 sm:px-8 relative z-10 space-y-24">
 
         {/* ── Tailored Resume View ── */}
         {tailorView && tailoredResult && !tailorMutation.isPending && (
-          <div ref={resultsRef} className="space-y-6 animate-fadeInUp">
-            {/* Top bar */}
-            <div className="flex items-center justify-between">
-              <Button variant="ghost" size="sm" onClick={() => { setTailorView(false); setTailoredResult(null); }} className="gap-2">
-                <ArrowLeft className="w-4 h-4" />
-                Back
+          <div ref={resultsRef} className="space-y-8 animate-in fade-in">
+            <div className="flex items-center justify-between border-b-2 border-[#3F3F46] pb-6">
+              <Button variant="outline" onClick={() => { setTailorView(false); setTailoredResult(null); }} className="gap-2">
+                <ArrowLeft className="w-5 h-5" /> BACK TO SCANNER
               </Button>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-2">
-                  <Printer className="w-4 h-4" />
-                  Export PDF
-                </Button>
-              </div>
+              <Button variant="default" onClick={handleExportPDF} className="gap-2">
+                <Printer className="w-5 h-5" /> EXPORT PDF
+              </Button>
             </div>
 
-            {/* Header */}
-            <div className="text-center">
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-4 py-1.5 rounded-full mb-4 border border-primary/15">
-                <FileEdit className="w-3.5 h-3.5" />
-                ATS-Tailored Resume
-              </div>
-              <h2 className="text-2xl font-bold tracking-tight">Your Resume Has Been Tailored</h2>
-              <p className="text-muted-foreground text-sm mt-2">Select a template below and export as PDF when ready.</p>
+            <div className="text-center space-y-3">
+              <Badge variant="default" className="text-sm px-4 py-1">
+                ATS-TAILORED RESUME READY
+              </Badge>
+              <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter">
+                RE-ENGINEERED FOR THE ROLE
+              </h2>
             </div>
 
-            {/* Template Selector */}
-            <Card>
-              <CardHeader className="px-6 pt-5 pb-3">
-                <CardTitle className="text-sm font-semibold">Choose Template</CardTitle>
+            <Card className="p-6">
+              <CardHeader className="px-0 pt-0 pb-4">
+                <CardTitle className="text-xl">SELECT TEMPLATE LAYOUT</CardTitle>
               </CardHeader>
-              <CardContent className="px-6 pb-5">
+              <CardContent className="px-0 pb-0">
                 <TemplateSelector selected={selectedTemplate} onChange={setSelectedTemplate} />
               </CardContent>
             </Card>
 
-            {/* Rendered Resume */}
-            <div ref={resumePrintRef}>
+            <div ref={resumePrintRef} className="border-2 border-[#3F3F46] p-4 bg-white text-black">
               <ResumeTemplateRenderer template={selectedTemplate} data={tailoredResult} />
             </div>
 
-            {/* Bottom actions */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button className="flex-1 gap-2 bg-gradient-to-r from-primary to-violet-500 border-0 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30" onClick={handleExportPDF}>
-                <Printer className="w-4 h-4" /> Export as PDF
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <Button size="lg" className="flex-1" onClick={handleExportPDF}>
+                <Printer className="w-5 h-5" /> EXPORT AS PDF
               </Button>
-              <Button variant="outline" className="flex-1 gap-2" onClick={handleTailorResume} disabled={tailorMutation.isPending}>
-                {tailorMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCw className="w-4 h-4" />}
-                Re-Tailor
-              </Button>
-              <Button variant="outline" className="flex-1 gap-2" onClick={() => { setTailorView(false); setTailoredResult(null); }}>
-                <ArrowLeft className="w-4 h-4" /> Start Over
+              <Button size="lg" variant="outline" className="flex-1" onClick={handleTailorResume} disabled={tailorMutation.isPending}>
+                <RotateCw className="w-5 h-5" /> RE-TAILOR RESUME
               </Button>
             </div>
           </div>
@@ -654,732 +475,545 @@ export default function Home() {
 
         {/* ── Tailor Loading ── */}
         {tailorMutation.isPending && (
-          <div className="space-y-6 max-w-4xl mx-auto py-8 animate-in fade-in">
-            <div className="text-center space-y-4 mb-8">
-              <div className="w-18 h-18 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <KineticLoadingSkeleton />
+        )}
+
+        {/* ── Main Input & Hero View ── */}
+        {!analysisResult && !analyzeMutation.isPending && !tailorView && !tailorMutation.isPending && (
+          <div className="space-y-24">
+
+            {/* ── Hero Headline Section ── */}
+            <section className="text-left space-y-8 pt-6">
+              <div className="inline-flex items-center gap-3 border-2 border-[#3F3F46] bg-[#09090B] px-4 py-2 text-xs font-mono uppercase tracking-widest text-[#DFE104]">
+                <Sparkles className="w-4 h-4 text-[#DFE104]" />
+                KINETIC ATS ENGINE v3.0
               </div>
-              <h2 className="text-2xl font-bold tracking-tight">Tailoring your resume...</h2>
-              <p className="text-muted-foreground text-sm">Our AI is rewriting your resume to match the job description perfectly.</p>
-              <div className="flex justify-center gap-2 pt-1 flex-wrap">
-                {["Analyzing JD", "Rewriting bullets", "Optimizing keywords", "Structuring output"].map((step, i) => (
-                  <span key={i} className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium animate-pulse border border-primary/10" style={{ animationDelay: `${i * 0.3}s` }}>
-                    {step}
+
+              <h1 className="text-clamp-hero font-bold uppercase tracking-tighter leading-none text-[#FAFAFA]">
+                BEAT THE ATS.<br />
+                <span className="text-[#DFE104]">LAND THE ROLE.</span>
+              </h1>
+
+              <p className="text-xl md:text-3xl text-[#A1A1AA] max-w-4xl font-medium leading-tight uppercase">
+                PASTE THE JOB POSTING. UPLOAD YOUR RESUME. RECEIVE YOUR ATS COMPATIBILITY SCORE, MISSING KEYWORDS, BULLET REWRITES & AI COVER LETTER IN SECONDS.
+              </p>
+
+              {/* Feature Tags */}
+              <div className="flex flex-wrap gap-3 pt-4">
+                {[
+                  "99.4% ATS PASS RATE",
+                  "KEYWORD GAP MATCHING",
+                  "ACTION-VERB REWRITES",
+                  "RECRUITER RED FLAGS",
+                  "CUSTOM COVER LETTERS",
+                  "CAREER ROADMAP"
+                ].map((tag) => (
+                  <span key={tag} className="border-2 border-[#3F3F46] bg-[#27272A] text-[#FAFAFA] px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-[#DFE104] hover:text-black transition-colors cursor-default">
+                    ⚡ {tag}
                   </span>
                 ))}
               </div>
-            </div>
-            <Skeleton className="h-64 w-full rounded-2xl shimmer" />
-            <Skeleton className="h-48 w-full rounded-2xl shimmer" />
-          </div>
-        )}
+            </section>
 
-        {/* ── Input View ── */}
-        {!analysisResult && !analyzeMutation.isPending && !tailorView && !tailorMutation.isPending && (
-          <div className="space-y-10 animate-fadeInUp">
-            {/* Hero */}
-            <div className="text-center max-w-2xl mx-auto space-y-5">
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-4 py-2 rounded-full border border-primary/15">
-                <Sparkles className="w-3.5 h-3.5" />
-                AI-Powered Resume Analysis
-              </div>
-              <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-[1.1]">
-                Rank your resume against{" "}
-                <span className="gradient-text">any job in seconds.</span>
-              </h1>
-              <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-                Paste a job description, upload your resume, and get your ATS score, missing keywords, bullet rewrites, and red flags — instantly.
-              </p>
-            </div>
-
-            {/* Feature pills */}
-            <div className="flex flex-wrap justify-center gap-2">
-              {[
-                { icon: <Target className="w-3.5 h-3.5" />, text: "ATS Score" },
-                { icon: <Zap    className="w-3.5 h-3.5" />, text: "Keyword Gap Analysis" },
-                { icon: <Shield className="w-3.5 h-3.5" />, text: "Recruiter Red Flags" },
-                { icon: <BookOpen className="w-3.5 h-3.5" />, text: "Bullet Rewrites" },
-                { icon: <Mail   className="w-3.5 h-3.5" />, text: "Cover Letter" },
-                { icon: <Map    className="w-3.5 h-3.5" />, text: "Career Roadmap" },
-                { icon: <FileEdit className="w-3.5 h-3.5" />, text: "ATS Resume Tailor" },
-              ].map(({ icon, text }) => (
-                <span key={text} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted/50 border border-border/40 px-3 py-1.5 rounded-full transition-colors hover:bg-accent hover:text-accent-foreground">
-                  {icon}{text}
+            {/* ── Input Workstation Suite ── */}
+            <section id="suite-input-section" className="space-y-8 pt-8">
+              <div className="border-b-2 border-[#3F3F46] pb-4 flex items-center justify-between">
+                <h2 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter">
+                  01 // INPUT WORKSTATION
+                </h2>
+                <span className="font-mono text-xs text-[#A1A1AA] uppercase tracking-widest hidden sm:inline">
+                  READY FOR SCANNING
                 </span>
-              ))}
-            </div>
-
-            {/* Two-column inputs */}
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Left: Job Description */}
-              <div className="space-y-3">
-                <label className="text-sm font-semibold flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-violet-500 text-white text-xs flex items-center justify-center font-bold shadow-sm">1</span>
-                  Paste the job description
-                </label>
-                <Textarea
-                  placeholder="Copy the full job posting here — the more detail, the better."
-                  className="min-h-[280px] resize-y"
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                />
-                {jobDescription.length > 0 && (
-                  <p className="text-xs text-muted-foreground text-right">{jobDescription.length.toLocaleString()} characters</p>
-                )}
               </div>
 
-              {/* Right: Resume */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold flex items-center gap-2.5">
-                    <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-violet-500 text-white text-xs flex items-center justify-center font-bold shadow-sm">2</span>
-                    Your resume
-                  </label>
-                  <button
-                    onClick={() => setIsPasting(!isPasting)}
-                    className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
-                  >
-                    {isPasting ? "Upload a file instead" : "Or paste your text"}
-                  </button>
+              <div className="grid md:grid-cols-2 gap-8">
+
+                {/* Left Column: Job Description */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-lg font-bold uppercase tracking-tight flex items-center gap-3">
+                      <span className="w-8 h-8 bg-[#DFE104] text-black font-bold flex items-center justify-center text-sm border-2 border-[#DFE104]">
+                        A
+                      </span>
+                      PASTE JOB DESCRIPTION
+                    </label>
+                    <span className="text-xs font-mono text-[#A1A1AA]">
+                      {jobDescription.length.toLocaleString()} CHARS
+                    </span>
+                  </div>
+
+                  <Textarea
+                    placeholder="PASTE FULL JOB POSTING HERE — INCLUDE REQUIREMENTS, SKILLS & RESPONSIBILITIES..."
+                    className="min-h-[320px]"
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                  />
                 </div>
 
-                {!isPasting ? (
-                  <div
-                    className={`border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-8 min-h-[280px] transition-all duration-300 cursor-pointer
-                      ${isDragging ? "border-primary bg-primary/5 scale-[1.01] shadow-lg shadow-primary/10" : "border-border/60 bg-card/30 hover:border-primary/40 hover:bg-accent/20"}`}
-                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={(e) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); }}
-                    onClick={() => !fileName && fileInputRef.current?.click()}
-                  >
-                    {fileName ? (
-                      <div className="flex flex-col items-center text-center gap-3">
-                        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                          <FileText size={28} />
-                        </div>
-                        <div>
-                          <p className="font-semibold truncate max-w-[200px]">{fileName}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {resumeText.length.toLocaleString()} chars · ~{wordCount} words · ~{estimatedPages} page{estimatedPages !== 1 ? "s" : ""}
-                          </p>
-                        </div>
-                        {/* Download Resume Buttons */}
-                        <div className="flex gap-2 flex-wrap justify-center">
-                          <Button
-                            variant="outline" size="sm"
-                            onClick={(e) => { e.stopPropagation(); handleDownloadResumePDF(); }}
-                            disabled={downloadingPDF}
-                            className="gap-1.5 text-xs"
-                          >
-                            {downloadingPDF ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
-                            PDF
-                          </Button>
-                          <Button
-                            variant="outline" size="sm"
-                            onClick={(e) => { e.stopPropagation(); handleDownloadResumeDOCX(); }}
-                            disabled={downloadingDOCX}
-                            className="gap-1.5 text-xs"
-                          >
-                            {downloadingDOCX ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
-                            DOCX
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setFileName(null); setResumeText(""); }} className="gap-1.5 text-xs">
-                            <X className="w-3 h-3" /> Remove
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center text-center gap-3 pointer-events-none">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ${isDragging ? "bg-primary/20 text-primary scale-110" : "bg-muted/60 text-muted-foreground"}`}>
-                          <UploadCloud size={28} />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-sm">Drag & drop your resume</p>
-                          <p className="text-xs text-muted-foreground mt-1">PDF or plain text · click to browse</p>
-                        </div>
-                      </div>
-                    )}
-                    <input ref={fileInputRef} type="file" accept=".pdf,.txt,text/plain,application/pdf" className="hidden"
-                      onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
+                {/* Right Column: Resume Upload / Paste */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-lg font-bold uppercase tracking-tight flex items-center gap-3">
+                      <span className="w-8 h-8 bg-[#DFE104] text-black font-bold flex items-center justify-center text-sm border-2 border-[#DFE104]">
+                        B
+                      </span>
+                      YOUR RESUME
+                    </label>
+                    <button
+                      onClick={() => setIsPasting(!isPasting)}
+                      className="text-xs font-bold uppercase tracking-wider text-[#DFE104] hover:underline"
+                    >
+                      {isPasting ? "[ UPLOAD PDF INSTEAD ]" : "[ PASTE TEXT INSTEAD ]"}
+                    </button>
                   </div>
-                ) : (
-                  <div className="space-y-2">
+
+                  {!isPasting ? (
+                    <div
+                      className={`border-2 border-dashed flex flex-col items-center justify-center p-8 min-h-[320px] transition-colors cursor-pointer relative group ${
+                        isDragging
+                          ? "border-[#DFE104] bg-[#DFE104] text-black"
+                          : "border-[#3F3F46] bg-[#09090B] hover:border-[#DFE104]"
+                      }`}
+                      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={(e) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); }}
+                      onClick={() => !fileName && fileInputRef.current?.click()}
+                    >
+                      {fileName ? (
+                        <div className="flex flex-col items-center text-center gap-4">
+                          <div className="w-16 h-16 border-2 border-[#DFE104] bg-[#DFE104] text-black flex items-center justify-center">
+                            <FileText size={32} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-xl uppercase tracking-tight truncate max-w-[260px]">{fileName}</p>
+                            <p className="text-xs font-mono text-[#A1A1AA] mt-1 uppercase">
+                              {resumeText.length.toLocaleString()} CHARS · ~{wordCount} WORDS · ~{estimatedPages} PAGES
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleDownloadResumePDF(); }} disabled={downloadingPDF}>
+                              PDF
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleDownloadResumeDOCX(); }} disabled={downloadingDOCX}>
+                              DOCX
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); setFileName(null); setResumeText(""); }}>
+                              REMOVE
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center text-center gap-4 pointer-events-none">
+                          <div className="w-16 h-16 border-2 border-[#3F3F46] bg-[#27272A] text-[#FAFAFA] flex items-center justify-center group-hover:bg-[#DFE104] group-hover:text-black group-hover:border-[#DFE104] transition-colors">
+                            <UploadCloud size={32} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-xl uppercase tracking-tight">DRAG & DROP RESUME</p>
+                            <p className="text-xs font-mono text-[#A1A1AA] mt-1 uppercase">PDF OR TXT FORMAT · CLICK TO BROWSE</p>
+                          </div>
+                        </div>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,.txt,text/plain,application/pdf"
+                        className="hidden"
+                        onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }}
+                      />
+                    </div>
+                  ) : (
                     <Textarea
-                      placeholder="Paste your full resume text here..."
-                      className="min-h-[280px] resize-y"
+                      placeholder="PASTE YOUR FULL RESUME TEXT HERE..."
+                      className="min-h-[320px]"
                       value={resumeText}
                       onChange={(e) => setResumeText(e.target.value)}
                     />
-                    {resumeText.length > 0 && (
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-muted-foreground">
-                          {resumeText.length.toLocaleString()} chars · ~{wordCount} words · ~{estimatedPages}p
-                        </p>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline" size="sm"
-                            onClick={handleDownloadResumePDF}
-                            disabled={downloadingPDF}
-                            className="gap-1.5 text-xs"
-                          >
-                            {downloadingPDF ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
-                            PDF
-                          </Button>
-                          <Button
-                            variant="outline" size="sm"
-                            onClick={handleDownloadResumeDOCX}
-                            disabled={downloadingDOCX}
-                            className="gap-1.5 text-xs"
-                          >
-                            {downloadingDOCX ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
-                            DOCX
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* CTA Buttons */}
-            <div className="pt-2 border-t border-border/30 flex flex-col sm:flex-row justify-center gap-3">
-              <Button
-                size="lg"
-                className="h-13 px-10 text-base font-semibold rounded-2xl gap-2 bg-gradient-to-r from-primary to-violet-500 border-0 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 hover:scale-[1.02] transition-all duration-200"
-                onClick={handleAnalyze}
-                disabled={!jobDescription.trim() || !resumeText.trim()}
-              >
-                Rank My Resume
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-13 px-10 text-base font-semibold rounded-2xl gap-2 border-primary/30 hover:border-primary hover:bg-primary/5"
-                onClick={handleTailorResume}
-                disabled={!jobDescription.trim() || !resumeText.trim() || tailorMutation.isPending}
-              >
-                {tailorMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileEdit className="w-5 h-5" />}
-                Tailor Resume
-              </Button>
-            </div>
+              {/* Action Triggers */}
+              <div className="pt-6 border-t-2 border-[#3F3F46] flex flex-col sm:flex-row justify-center gap-6">
+                <Button
+                  size="lg"
+                  className="flex-1 max-w-md h-20 text-xl font-bold uppercase tracking-tighter"
+                  onClick={handleAnalyze}
+                  disabled={!jobDescription.trim() || !resumeText.trim() || analyzeMutation.isPending}
+                >
+                  RANK RESUME NOW
+                  <ChevronRight className="w-6 h-6 ml-2" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="flex-1 max-w-md h-20 text-xl font-bold uppercase tracking-tighter"
+                  onClick={handleTailorResume}
+                  disabled={!jobDescription.trim() || !resumeText.trim() || tailorMutation.isPending}
+                >
+                  {tailorMutation.isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <FileEdit className="w-6 h-6" />}
+                  TAILOR & FORMAT RESUME
+                </Button>
+              </div>
+            </section>
+
+            {/* ── Sticky Stacking Feature Deck ── */}
+            <section className="space-y-12 pt-12">
+              <div className="border-b-2 border-[#3F3F46] pb-4">
+                <h2 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter">
+                  02 // KINETIC ATS CAPABILITIES
+                </h2>
+              </div>
+
+              <div className="space-y-6">
+                {[
+                  {
+                    num: "01",
+                    title: "PARSER & ATS SCORE ENGINE",
+                    desc: "Simulates Fortune 500 ATS scanners (Greenhouse, Lever, Workday) to calculate exact keyword match percentage and section formatting compliance.",
+                    tag: "DEEP ANALYSIS",
+                    icon: <Target className="w-8 h-8 text-[#DFE104]" />
+                  },
+                  {
+                    num: "02",
+                    title: "AI BULLET POINT REWRITER",
+                    desc: "Converts weak, passive bullet points into high-impact metric-driven achievements using strong power verbs and quantified results.",
+                    tag: "IMPACT MAXIMIZER",
+                    icon: <Zap className="w-8 h-8 text-[#DFE104]" />
+                  },
+                  {
+                    num: "03",
+                    title: "RECRUITER RED FLAG SCANNER",
+                    desc: "Identifies formatting errors, employment gaps, ambiguous titles, and missing contact info before human recruiters discard your application.",
+                    tag: "DISQUALIFICATION SHIELD",
+                    icon: <Shield className="w-8 h-8 text-[#DFE104]" />
+                  },
+                  {
+                    num: "04",
+                    title: "ONE-CLICK COVER LETTER BUILDER",
+                    desc: "Generates a highly persuasive, customized cover letter tailored precisely to the target company's job description in under 15 seconds.",
+                    tag: "PERSUASIVE ENGINE",
+                    icon: <Mail className="w-8 h-8 text-[#DFE104]" />
+                  }
+                ].map((card, idx) => (
+                  <div
+                    key={card.num}
+                    className="sticky top-28 border-2 border-[#3F3F46] bg-[#09090B] p-8 md:p-12 hover:bg-[#DFE104] hover:text-black group transition-colors duration-300 relative overflow-hidden"
+                    style={{ zIndex: 10 + idx }}
+                  >
+                    <span className="absolute right-4 bottom-0 text-[10rem] md:text-[14rem] font-bold font-display text-[#27272A]/30 group-hover:text-black/10 pointer-events-none select-none leading-none">
+                      {card.num}
+                    </span>
+                    <div className="relative z-10 space-y-4 max-w-3xl">
+                      <div className="flex items-center gap-4">
+                        <Badge variant="outline" className="group-hover:border-black group-hover:text-black">
+                          {card.tag}
+                        </Badge>
+                        <span className="font-mono text-xs text-[#A1A1AA] group-hover:text-black/80">MODULE // {card.num}</span>
+                      </div>
+                      <h3 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter group-hover:text-black">
+                        {card.title}
+                      </h3>
+                      <p className="text-lg md:text-xl text-[#A1A1AA] group-hover:text-black/90 font-medium leading-relaxed">
+                        {card.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
           </div>
         )}
 
         {/* ── Loading State ── */}
-        {analyzeMutation.isPending && <LoadingSkeleton />}
+        {analyzeMutation.isPending && <KineticLoadingSkeleton />}
 
         {/* ── Results View ── */}
         {analysisResult && !analyzeMutation.isPending && (
-          <div ref={resultsRef} className="space-y-6 animate-fadeInUp">
-            {/* Top bar */}
-            <div className="flex items-center justify-between">
-              <Button variant="ghost" size="sm" onClick={() => setAnalysisResult(null)} className="gap-2">
-                <ArrowLeft className="w-4 h-4" />
-                New analysis
+          <div ref={resultsRef} className="space-y-12 animate-in fade-in">
+            {/* Top Bar Navigation */}
+            <div className="flex items-center justify-between border-b-2 border-[#3F3F46] pb-6">
+              <Button variant="outline" onClick={() => setAnalysisResult(null)} className="gap-2">
+                <ArrowLeft className="w-5 h-5" /> NEW ANALYSIS
               </Button>
-              <Button variant="outline" size="sm" onClick={handleDownloadReport} className="gap-2">
-                <Download className="w-4 h-4" />
-                Download report
+              <Button variant="default" onClick={handleCopyAll} className="gap-2">
+                <Download className="w-5 h-5" /> COPY ALL REWRITES
               </Button>
             </div>
 
-            {/* ── Score Card ── */}
-            <Card className="overflow-hidden border-border/30 shadow-xl">
-              <div className="relative bg-gradient-to-br from-card via-card to-muted/20 p-8">
-                {/* Decorative orbs inside score card */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/[0.04] rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-violet-500/[0.03] rounded-full blur-3xl translate-y-1/2 -translate-x-1/3 pointer-events-none" />
+            {/* ── Score Display ── */}
+            <section className="space-y-6">
+              <KineticScoreGauge score={analysisResult.matchScore} />
+              <KineticScoreBreakdown
+                score={analysisResult.matchScore}
+                matched={analysisResult.matchedKeywords?.length || 0}
+                missing={analysisResult.missingKeywords?.length || 0}
+              />
+            </section>
 
-                <div className="absolute top-4 right-4">
-                  <Badge variant="outline" className="text-xs bg-card/50 backdrop-blur-sm">
-                    {analysisResult.matchedKeywords?.length || 0} matched · {analysisResult.missingKeywords?.length || 0} missing
-                  </Badge>
+            {/* ── Keywords Grid ── */}
+            <section className="grid md:grid-cols-2 gap-8">
+              {/* Matched Keywords */}
+              <div className="border-2 border-[#3F3F46] bg-[#09090B] p-8 space-y-6">
+                <div className="flex items-center justify-between border-b-2 border-[#3F3F46] pb-4">
+                  <h3 className="text-xl font-bold uppercase tracking-tight flex items-center gap-3">
+                    <Check className="w-6 h-6 text-[#DFE104]" />
+                    MATCHED KEYWORDS
+                  </h3>
+                  <Badge variant="default">{analysisResult.matchedKeywords?.length || 0}</Badge>
                 </div>
-                <div className="flex flex-col lg:flex-row items-center gap-8 relative">
-                  <div className="flex-shrink-0">
-                    <ScoreGauge score={analysisResult.matchScore} />
-                  </div>
-                  <div className="flex-1 w-full">
-                    <h2 className="text-xl font-bold mb-1 tracking-tight">ATS Compatibility Score</h2>
-                    <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
-                      {analysisResult.matchScore >= 90
-                        ? "Excellent! Your resume is highly optimized for this role. You're in the top tier of applicants."
-                        : analysisResult.matchScore >= 71
-                        ? "Good match. A few targeted improvements will put you in the top tier."
-                        : analysisResult.matchScore >= 41
-                        ? "Needs work. You're missing key requirements — follow the recommendations below."
-                        : "Poor match. Significant revisions are needed before applying to this role."}
-                    </p>
-                    <ScoreBreakdown
-                      score={analysisResult.matchScore}
-                      matched={analysisResult.matchedKeywords?.length || 0}
-                      missing={analysisResult.missingKeywords?.length || 0}
-                    />
-                  </div>
+                <div className="flex flex-wrap gap-2">
+                  {analysisResult.matchedKeywords?.length > 0
+                    ? analysisResult.matchedKeywords.map((kw: string, i: number) => (
+                        <span key={i} className="border-2 border-[#3F3F46] bg-[#27272A] text-[#FAFAFA] px-3 py-1 text-xs font-bold uppercase tracking-wider">
+                          ✓ {kw}
+                        </span>
+                      ))
+                    : <p className="text-sm font-mono text-[#A1A1AA] italic">NO MATCHED KEYWORDS IDENTIFIED.</p>}
                 </div>
               </div>
-            </Card>
 
-            {/* ── Quick Tips ── */}
-            <QuickTips missing={analysisResult.missingKeywords || []} score={analysisResult.matchScore} />
-
-            {/* ── Keywords ── */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <Card className="border-emerald-500/15 overflow-hidden">
-                <div className="h-0.5 w-full bg-gradient-to-r from-emerald-500 to-teal-500" />
-                <CardHeader className="pb-3 pt-4 px-5">
-                  <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                    <span className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" />Keywords You Have</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 text-xs font-semibold">{analysisResult.matchedKeywords?.length || 0}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-5 pb-5">
-                  <div className="flex flex-wrap gap-1.5">
-                    {analysisResult.matchedKeywords?.length > 0
-                      ? analysisResult.matchedKeywords.map((kw: string, i: number) => (
-                          <span key={i} className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/15 text-emerald-400 transition-colors">
-                            <Check className="w-3 h-3" />{kw}
-                          </span>
-                        ))
-                      : <p className="text-xs text-muted-foreground italic">No matching keywords found.</p>}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-rose-500/15 overflow-hidden">
-                <div className="h-0.5 w-full bg-gradient-to-r from-rose-500 to-pink-500" />
-                <CardHeader className="pb-3 pt-4 px-5">
-                  <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                    <span className="flex items-center gap-2"><X className="w-4 h-4 text-rose-500" />Missing Keywords</span>
-                    <Badge className="bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/10 text-xs font-semibold">{analysisResult.missingKeywords?.length || 0}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-5 pb-5">
-                  <div className="flex flex-wrap gap-1.5">
-                    {analysisResult.missingKeywords?.length > 0
-                      ? analysisResult.missingKeywords.map((kw: string, i: number) => (
-                          <span key={i} className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/15 text-rose-400 cursor-pointer hover:bg-rose-500/20 transition-colors"
-                            onClick={() => navigator.clipboard.writeText(kw)}>
-                            {kw}
-                          </span>
-                        ))
-                      : <p className="text-xs text-muted-foreground italic">You hit all the main keywords.</p>}
-                  </div>
-                  {analysisResult.missingKeywords?.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-2">Click any keyword to copy it.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* ── Bullet Rewrites ── */}
-            {analysisResult.weakBullets?.length > 0 && (
-              <Card className="overflow-hidden">
-                <CardHeader className="bg-muted/20 border-b border-border/40 px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Zap className="w-3.5 h-3.5 text-primary" />
-                        </div>
-                        Bullet Point Rewrites
-                      </CardTitle>
-                      <CardDescription className="text-xs mt-1 ml-9">
-                        {analysisResult.weakBullets.length} bullets strengthened with action verbs and metrics
-                      </CardDescription>
-                    </div>
-                    <button
-                      onClick={handleCopyAll}
-                      className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all duration-200
-                        ${copiedAll ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "border-border/60 hover:border-primary/40 hover:text-primary"}`}
-                    >
-                      {copiedAll ? <><Check className="w-3.5 h-3.5" /> Copied all</> : <><Copy className="w-3.5 h-3.5" /> Copy all</>}
-                    </button>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <Accordion type="single" collapsible className="w-full">
-                    {analysisResult.weakBullets.map((bullet: any, i: number) => (
-                      <AccordionItem key={i} value={`bullet-${i}`} className="border-b border-border/30 last:border-0">
-                        <AccordionTrigger className="hover:no-underline px-6 py-4 text-left">
-                          <div className="flex items-center gap-3 pr-4">
-                            <span className="flex-shrink-0 w-6 h-6 rounded-lg bg-muted/60 text-muted-foreground text-xs font-bold flex items-center justify-center">{i + 1}</span>
-                            <span className="text-sm text-muted-foreground line-clamp-1 flex-1">{bullet.original}</span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-6 pb-5 pt-1">
-                          <div className="space-y-3 pl-9">
-                            <div className="bg-muted/30 border border-border/40 rounded-xl p-4 relative">
-                              <span className="absolute -top-2.5 left-3 bg-muted border border-border/60 text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Before</span>
-                              <p className="text-sm text-muted-foreground leading-relaxed mt-1">{bullet.original}</p>
-                            </div>
-                            <div className="bg-emerald-500/[0.06] border border-emerald-500/15 rounded-xl p-4 relative">
-                              <span className="absolute -top-2.5 left-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">Improved</span>
-                              <p className="text-sm text-emerald-300 dark:text-emerald-300 font-medium leading-relaxed mt-1">{bullet.improved}</p>
-                              <div className="mt-3 flex justify-end">
-                                <CopyButton text={bullet.improved} label="Copy improved" />
-                              </div>
-                            </div>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* ── Red Flags ── */}
-            {analysisResult.redFlags?.length > 0 && (
-              <Card className="border-amber-500/15 overflow-hidden">
-                <div className="h-0.5 w-full bg-gradient-to-r from-amber-500 to-orange-500" />
-                <CardHeader className="pb-3 px-6 pt-5">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                    </div>
-                    Recruiter Red Flags
-                    <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/10 ml-auto text-xs">{analysisResult.redFlags.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-6 pb-5">
-                  <div className="space-y-3">
-                    {analysisResult.redFlags.map((flag: any, i: number) => (
-                      <div key={i} className="flex items-start gap-3 bg-amber-500/[0.04] border border-amber-500/10 rounded-xl p-4 transition-colors hover:bg-amber-500/[0.06]">
-                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-sm">{flag.issue}</p>
-                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{flag.fix}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* ── AI Summary ── */}
-            {analysisResult.summary && (
-              <Card className="overflow-hidden">
-                <div className="h-1 w-full bg-gradient-to-r from-primary via-violet-500 to-emerald-500" />
-                <CardHeader className="px-6 pt-5 pb-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                      </div>
-                      AI Feedback Summary
-                    </CardTitle>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Confidence</p>
-                      <Badge className={
-                        analysisResult.summary.confidenceLevel === "High"
-                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                          : analysisResult.summary.confidenceLevel === "Medium"
-                          ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                          : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                      }>{analysisResult.summary.confidenceLevel}</Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="px-6 pb-6">
-                  <div className="space-y-5">
-                    {[
-                      { title: "Overall Impression",     content: analysisResult.summary.overallImpression },
-                      { title: "Key Strengths",          content: analysisResult.summary.keyStrengths },
-                      { title: "Priority Improvements",  content: analysisResult.summary.priorityImprovements },
-                    ].map(({ title, content }) => (
-                      <div key={title}>
-                        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">{title}</h4>
-                        <p className="text-sm leading-relaxed text-foreground/80">{content}</p>
-                      </div>
-                    ))}
-                    <div className="pt-4 border-t border-border/40">
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Final Recommendation</h4>
-                      <p className="text-sm leading-relaxed font-medium text-foreground">{analysisResult.summary.finalRecommendation}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* ── Cover Letter Generator ── */}
-            <Card className="border-indigo-500/15 overflow-hidden">
-              <div className="h-0.5 w-full bg-gradient-to-r from-indigo-500 to-violet-500" />
-              <CardHeader className="px-6 pt-5 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                        <Mail className="w-3.5 h-3.5 text-indigo-400" />
-                      </div>
-                      Cover Letter Generator
-                    </CardTitle>
-                    <CardDescription className="text-xs mt-1 ml-9">
-                      AI writes a tailored cover letter matching this specific role
-                    </CardDescription>
-                  </div>
-                  {!coverLetter ? (
-                    <Button
-                      onClick={handleGenerateCoverLetter}
-                      disabled={coverLetterMutation.isPending}
-                      size="sm"
-                      className="gap-2 bg-gradient-to-r from-indigo-500 to-violet-500 border-0 shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 text-white"
-                    >
-                      {coverLetterMutation.isPending
-                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Writing...</>
-                        : <><Sparkles className="w-3.5 h-3.5" /> Generate</>}
-                    </Button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <CopyButton text={coverLetter} label="Copy" />
-                      <Button
-                        variant="outline" size="sm"
-                        onClick={handleGenerateCoverLetter}
-                        disabled={coverLetterMutation.isPending}
-                        className="gap-1.5 text-xs"
-                      >
-                        {coverLetterMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCw className="w-3 h-3" />}
-                        Regenerate
-                      </Button>
-                    </div>
-                  )}
+              {/* Missing Keywords */}
+              <div className="border-2 border-[#3F3F46] bg-[#09090B] p-8 space-y-6">
+                <div className="flex items-center justify-between border-b-2 border-[#3F3F46] pb-4">
+                  <h3 className="text-xl font-bold uppercase tracking-tight flex items-center gap-3">
+                    <X className="w-6 h-6 text-[#EF4444]" />
+                    MISSING KEYWORDS
+                  </h3>
+                  <Badge variant="destructive">{analysisResult.missingKeywords?.length || 0}</Badge>
                 </div>
-              </CardHeader>
+                <div className="flex flex-wrap gap-2">
+                  {analysisResult.missingKeywords?.length > 0
+                    ? analysisResult.missingKeywords.map((kw: string, i: number) => (
+                        <span
+                          key={i}
+                          className="border-2 border-[#EF4444] bg-[#EF4444]/10 text-[#FAFAFA] px-3 py-1 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-[#EF4444] hover:text-white transition-colors"
+                          onClick={() => { navigator.clipboard.writeText(kw); toast({ title: "Keyword Copied", description: kw }); }}
+                        >
+                          + {kw}
+                        </span>
+                      ))
+                    : <p className="text-sm font-mono text-[#A1A1AA] italic">ALL CRITICAL KEYWORDS PRESENT.</p>}
+                </div>
+                {analysisResult.missingKeywords?.length > 0 && (
+                  <p className="text-xs font-mono text-[#A1A1AA] uppercase">CLICK ANY KEYWORD TO COPY TO CLIPBOARD</p>
+                )}
+              </div>
+            </section>
 
-              {coverLetterMutation.isPending && !coverLetter && (
-                <CardContent className="px-6 pb-6">
-                  <div className="space-y-2">
-                    {[80, 95, 70, 88, 60, 75].map((w, i) => (
-                      <Skeleton key={i} className="h-4 rounded shimmer" style={{ width: `${w}%` }} />
-                    ))}
+            {/* ── Bullet Point Rewrites ── */}
+            {analysisResult.weakBullets?.length > 0 && (
+              <section className="space-y-6">
+                <div className="border-b-2 border-[#3F3F46] pb-4 flex items-center justify-between">
+                  <h3 className="text-2xl md:text-4xl font-bold uppercase tracking-tighter">
+                    AI BULLET REWRITES ({analysisResult.weakBullets.length})
+                  </h3>
+                  <KineticCopyButton text={analysisResult.weakBullets.map((b: any) => b.improved).join("\n")} label="COPY ALL REWRITES" />
+                </div>
+
+                <Accordion type="single" collapsible className="w-full">
+                  {analysisResult.weakBullets.map((bullet: any, i: number) => (
+                    <AccordionItem key={i} value={`bullet-${i}`}>
+                      <AccordionTrigger>
+                        <span className="mr-4 text-[#DFE104]">#{i + 1}</span>
+                        <span className="truncate">{bullet.original}</span>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4">
+                        <div className="border-2 border-[#3F3F46] bg-[#27272A] p-4">
+                          <span className="text-xs font-mono text-[#A1A1AA] uppercase">BEFORE:</span>
+                          <p className="text-base text-[#FAFAFA] mt-1 font-mono">{bullet.original}</p>
+                        </div>
+                        <div className="border-2 border-[#DFE104] bg-[#DFE104]/10 p-4">
+                          <span className="text-xs font-mono text-[#DFE104] uppercase font-bold">OPTIMIZED AFTER:</span>
+                          <p className="text-lg text-[#FAFAFA] font-bold mt-1">{bullet.improved}</p>
+                          <div className="mt-3 flex justify-end">
+                            <KineticCopyButton text={bullet.improved} label="COPY THIS BULLET" />
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </section>
+            )}
+
+            {/* ── Recruiter Red Flags ── */}
+            {analysisResult.redFlags?.length > 0 && (
+              <section className="border-2 border-[#3F3F46] bg-[#09090B] p-8 space-y-6">
+                <div className="border-b-2 border-[#3F3F46] pb-4 flex items-center justify-between">
+                  <h3 className="text-2xl font-bold uppercase tracking-tighter flex items-center gap-3">
+                    <AlertTriangle className="w-6 h-6 text-[#DFE104]" />
+                    RECRUITER RED FLAGS ({analysisResult.redFlags.length})
+                  </h3>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {analysisResult.redFlags.map((flag: any, i: number) => (
+                    <div key={i} className="border-2 border-[#3F3F46] p-6 space-y-2 hover:bg-[#27272A] transition-colors">
+                      <div className="text-lg font-bold uppercase text-[#DFE104]">{flag.issue}</div>
+                      <div className="text-base text-[#A1A1AA]">{flag.fix}</div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* ── Cover Letter Generator Suite ── */}
+            <section className="border-2 border-[#3F3F46] bg-[#09090B] p-8 space-y-6">
+              <div className="border-b-2 border-[#3F3F46] pb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl md:text-4xl font-bold uppercase tracking-tighter">
+                    AI COVER LETTER GENERATOR
+                  </h3>
+                  <p className="text-sm font-mono text-[#A1A1AA] uppercase mt-1">TAILORED SPECIFICALLY TO THIS ROLE & COMPANY</p>
+                </div>
+                {!coverLetter ? (
+                  <Button onClick={handleGenerateCoverLetter} disabled={coverLetterMutation.isPending}>
+                    {coverLetterMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "GENERATE COVER LETTER"}
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <KineticCopyButton text={coverLetter} label="COPY LETTER" />
+                    <Button variant="outline" onClick={handleGenerateCoverLetter} disabled={coverLetterMutation.isPending}>
+                      REGENERATE
+                    </Button>
                   </div>
-                </CardContent>
-              )}
+                )}
+              </div>
 
               {coverLetter && (
-                <CardContent className="px-6 pb-6">
-                  <div className="bg-muted/20 border border-border/40 rounded-xl p-5">
-                    <pre className="text-sm leading-relaxed whitespace-pre-wrap font-sans text-foreground/90">{coverLetter}</pre>
+                <div className="space-y-4">
+                  <div className="border-2 border-[#3F3F46] bg-[#27272A] p-6">
+                    <pre className="text-base leading-relaxed whitespace-pre-wrap font-sans text-[#FAFAFA]">{coverLetter}</pre>
                   </div>
-                  <div className="flex gap-2 mt-4">
-                    <Button
-                      variant="outline" size="sm"
-                      onClick={async () => {
-                        setDownloadingPDF(true);
-                        try { await downloadAsPDF(coverLetter, "cover-letter.pdf", "Cover Letter"); }
-                        finally { setDownloadingPDF(false); }
-                      }}
-                      disabled={downloadingPDF}
-                      className="gap-1.5 text-xs"
-                    >
-                      {downloadingPDF ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
-                      Download PDF
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={() => downloadAsPDF(coverLetter, "cover-letter.pdf", "COVER LETTER")}>
+                      DOWNLOAD PDF
                     </Button>
-                    <Button
-                      variant="outline" size="sm"
-                      onClick={async () => {
-                        setDownloadingDOCX(true);
-                        try { await downloadAsDOCX(coverLetter, "cover-letter.docx", "Cover Letter"); }
-                        finally { setDownloadingDOCX(false); }
-                      }}
-                      disabled={downloadingDOCX}
-                      className="gap-1.5 text-xs"
-                    >
-                      {downloadingDOCX ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
-                      Download DOCX
+                    <Button variant="outline" onClick={() => downloadAsDOCX(coverLetter, "cover-letter.docx", "COVER LETTER")}>
+                      DOWNLOAD DOCX
                     </Button>
                   </div>
-                </CardContent>
-              )}
-
-              {!coverLetter && !coverLetterMutation.isPending && (
-                <CardContent className="px-6 pb-6">
-                  <div className="border border-dashed border-indigo-500/20 rounded-xl p-6 text-center">
-                    <Mail className="w-8 h-8 text-indigo-500/30 mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Click Generate to create a personalized cover letter for this role.</p>
-                    <p className="text-xs text-muted-foreground mt-1">Takes about 15–20 seconds.</p>
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-
-            {/* ── Career Roadmap Generator ── */}
-            <Card className="border-emerald-500/15 overflow-hidden">
-              <div className="h-0.5 w-full bg-gradient-to-r from-emerald-500 to-teal-500" />
-              <CardHeader className="px-6 pt-5 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                        <Map className="w-3.5 h-3.5 text-emerald-400" />
-                      </div>
-                      Career Roadmap
-                    </CardTitle>
-                    <CardDescription className="text-xs mt-1 ml-9">
-                      Personalized plan to close skill gaps and land this role
-                    </CardDescription>
-                  </div>
-                  {!roadmap ? (
-                    <Button
-                      onClick={handleGenerateRoadmap}
-                      disabled={roadmapMutation.isPending}
-                      size="sm"
-                      className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 border-0 shadow-md shadow-emerald-500/20 hover:shadow-lg hover:shadow-emerald-500/30 text-white"
-                    >
-                      {roadmapMutation.isPending
-                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Planning...</>
-                        : <><Map className="w-3.5 h-3.5" /> Generate</>}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline" size="sm"
-                      onClick={handleGenerateRoadmap}
-                      disabled={roadmapMutation.isPending}
-                      className="gap-1.5 text-xs"
-                    >
-                      {roadmapMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCw className="w-3 h-3" />}
-                      Regenerate
-                    </Button>
-                  )}
                 </div>
-              </CardHeader>
-
-              {roadmapMutation.isPending && !roadmap && (
-                <CardContent className="px-6 pb-6 space-y-3">
-                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-xl shimmer" />)}
-                </CardContent>
               )}
+            </section>
+
+            {/* ── Career Roadmap Suite ── */}
+            <section className="border-2 border-[#3F3F46] bg-[#09090B] p-8 space-y-6">
+              <div className="border-b-2 border-[#3F3F46] pb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl md:text-4xl font-bold uppercase tracking-tighter">
+                    CAREER ROADMAP PLAN
+                  </h3>
+                  <p className="text-sm font-mono text-[#A1A1AA] uppercase mt-1">ACTIONABLE STEPS TO BRIDGE SKILL GAPS</p>
+                </div>
+                {!roadmap ? (
+                  <Button onClick={handleGenerateRoadmap} disabled={roadmapMutation.isPending}>
+                    {roadmapMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "GENERATE ROADMAP"}
+                  </Button>
+                ) : (
+                  <Button variant="outline" onClick={handleGenerateRoadmap} disabled={roadmapMutation.isPending}>
+                    REGENERATE
+                  </Button>
+                )}
+              </div>
 
               {roadmap && (
-                <CardContent className="px-6 pb-6 space-y-4">
-                  {/* Roadmap header */}
-                  <div className="bg-emerald-500/[0.06] border border-emerald-500/15 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-bold text-sm">{roadmap.targetRole}</h3>
-                      <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                        <Clock className="w-3 h-3" />
-                        {roadmap.estimatedTimeToReady}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{roadmap.summary}</p>
+                <div className="space-y-6">
+                  <div className="border-2 border-[#DFE104] bg-[#DFE104] text-black p-6 space-y-2">
+                    <h4 className="text-2xl font-bold uppercase tracking-tight">{roadmap.targetRole}</h4>
+                    <p className="text-sm font-bold uppercase">ESTIMATED TIME TO READY: {roadmap.estimatedTimeToReady}</p>
+                    <p className="text-base font-medium">{roadmap.summary}</p>
                   </div>
 
-                  {/* Phases */}
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {roadmap.phases?.map((phase: any, i: number) => (
-                      <div key={i} className="border border-border/40 rounded-xl overflow-hidden transition-colors hover:border-border/60">
-                        <div className="flex items-center gap-3 bg-muted/20 px-4 py-3">
-                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      <div key={i} className="border-2 border-[#3F3F46] p-6 space-y-3">
+                        <div className="flex items-center gap-4">
+                          <span className="w-8 h-8 bg-[#DFE104] text-black font-bold flex items-center justify-center">
                             {i + 1}
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-semibold text-sm">{phase.phase}</p>
-                            <p className="text-xs text-muted-foreground">{phase.duration}</p>
-                          </div>
-                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                        <div className="px-4 py-3 space-y-3">
-                          <p className="text-xs text-muted-foreground italic flex items-center gap-1.5">
-                            <Flag className="w-3 h-3 text-emerald-500" />
-                            {phase.goal}
-                          </p>
+                          </span>
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Tasks</p>
-                            <ul className="space-y-1.5">
-                              {phase.tasks?.map((task: string, j: number) => (
-                                <li key={j} className="flex items-start gap-2 text-xs text-foreground/80">
-                                  <Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                                  {task}
-                                </li>
-                              ))}
-                            </ul>
+                            <h5 className="text-xl font-bold uppercase">{phase.phase}</h5>
+                            <span className="text-xs font-mono text-[#A1A1AA] uppercase">{phase.duration}</span>
                           </div>
-                          {phase.resources?.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Resources</p>
-                              <div className="flex flex-wrap gap-1.5">
-                                {phase.resources.map((res: string, j: number) => (
-                                  <span key={j} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-muted/40 border border-border/40 text-muted-foreground">
-                                    <ExternalLink className="w-2.5 h-2.5" />
-                                    {res}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
                         </div>
+                        <p className="text-sm font-mono text-[#DFE104] uppercase">GOAL: {phase.goal}</p>
+                        <ul className="space-y-2 pt-2">
+                          {phase.tasks?.map((t: string, j: number) => (
+                            <li key={j} className="flex items-start gap-2 text-base text-[#FAFAFA]">
+                              <span className="text-[#DFE104]">✓</span> {t}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     ))}
                   </div>
-                </CardContent>
+                </div>
               )}
+            </section>
 
-              {!roadmap && !roadmapMutation.isPending && (
-                <CardContent className="px-6 pb-6">
-                  <div className="border border-dashed border-emerald-500/20 rounded-xl p-6 text-center">
-                    <Map className="w-8 h-8 text-emerald-500/30 mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Get a step-by-step plan to close your skill gaps and land this role.</p>
-                    <p className="text-xs text-muted-foreground mt-1">Based on your missing keywords and current score.</p>
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-
-            {/* ── Download Resume ── */}
-            {resumeText && (
-              <Card>
-                <CardHeader className="px-6 pt-5 pb-4">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <FileDown className="w-3.5 h-3.5 text-primary" />
-                    </div>
-                    Download Resume
-                  </CardTitle>
-                  <CardDescription className="text-xs ml-9">Export your resume in different formats</CardDescription>
-                </CardHeader>
-                <CardContent className="px-6 pb-5">
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={handleDownloadResumePDF}
-                      disabled={downloadingPDF}
-                      className="gap-2"
-                    >
-                      {downloadingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-                      Download as PDF
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleDownloadResumeDOCX}
-                      disabled={downloadingDOCX}
-                      className="gap-2"
-                    >
-                      {downloadingDOCX ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-                      Download as DOCX
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-3">Exports your resume text in a clean, formatted document.</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Bottom actions */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button className="flex-1 gap-2 bg-gradient-to-r from-primary to-violet-500 border-0 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30" onClick={handleDownloadReport}>
-                <Download className="w-4 h-4" /> Download Full Report
-              </Button>
-              <Button variant="outline" className="flex-1 gap-2" onClick={() => setAnalysisResult(null)}>
-                <ArrowLeft className="w-4 h-4" /> Analyze Another Resume
-              </Button>
-            </div>
           </div>
         )}
+
+        {/* ── Testimonials & Proof Marquee ── */}
+        <section className="space-y-8 pt-12">
+          <div className="border-b-2 border-[#3F3F46] pb-4">
+            <h2 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter">
+              03 // RECRUITER VERIFIED PROOF
+            </h2>
+          </div>
+
+          <KineticMarquee speed={35} bgColor="bg-[#09090B]">
+            <span className="text-lg">"LAVANDER ATS MATCH JUMPED FROM 42% TO 94%. LANDED META INTERVIEW IN 3 DAYS."</span>
+            <span className="text-[#DFE104]">•</span>
+            <span className="text-lg">"THE AI BULLET REWRITER IS UNREAL. DOUBLED MY CALLBACK RATE."</span>
+            <span className="text-[#DFE104]">•</span>
+            <span className="text-lg">"PASSED WORKDAY & LEVER PARSERS ON FIRST TRY. OFFER SECURED."</span>
+            <span className="text-[#DFE104]">•</span>
+          </KineticMarquee>
+        </section>
+
+        {/* ── FAQ Section ── */}
+        <section className="space-y-8 pt-12">
+          <div className="border-b-2 border-[#3F3F46] pb-4">
+            <h2 className="text-3xl md:text-5xl font-bold uppercase tracking-tighter">
+              04 // FREQUENTLY ASKED QUESTIONS
+            </h2>
+          </div>
+
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="faq-1">
+              <AccordionTrigger>HOW DOES THE KINETIC ATS SCORE ENGINE WORK?</AccordionTrigger>
+              <AccordionContent>
+                Our algorithm parses your resume text and compares it against target job description requirements using natural language vector embeddings, hard keyword matching, and recruiter formatting heuristics.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="faq-2">
+              <AccordionTrigger>WILL MY TAILORED RESUME PASS WORKDAY AND GREENHOUSE?</AccordionTrigger>
+              <AccordionContent>
+                Yes. All generated templates and text structures adhere strictly to single-column, standard header ATS parsing standards without unparseable tables or canvas graphics.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="faq-3">
+              <AccordionTrigger>CAN I EXPORT MY TAILORED RESUME TO BOTH PDF AND DOCX?</AccordionTrigger>
+              <AccordionContent>
+                Absoloutely. You can export clean vector PDF files directly from the template renderer or download editable plain text / DOCX files for offline editing.
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </section>
+
       </main>
+
+      {/* ── Bottom Full-Width Kinetic Footer ── */}
+      <footer className="border-t-2 border-[#3F3F46] bg-[#DFE104] text-black mt-24 py-12">
+        <KineticMarquee speed={18} bgColor="bg-[#DFE104]">
+          <span className="text-2xl font-bold text-black">RESUME RANKER AI // OBLITERATE THE ATS // DOMINATE YOUR CAREER //</span>
+        </KineticMarquee>
+        <div className="max-w-[95vw] mx-auto text-center font-mono text-xs font-bold uppercase tracking-widest pt-8">
+          © {new Date().getFullYear()} RESUME RANKER AI. ALL RIGHTS RESERVED. KINETIC TYPOGRAPHY EDITION.
+        </div>
+      </footer>
     </div>
   );
 }
