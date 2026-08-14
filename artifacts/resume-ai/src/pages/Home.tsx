@@ -380,10 +380,10 @@ export default function Home() {
         <div className="max-w-[95vw] mx-auto h-20 flex items-center justify-between px-4 sm:px-8">
           <div className="flex items-center gap-4">
             <div className="h-10 px-4 bg-[#DFE104] text-black font-bold uppercase tracking-tighter flex items-center justify-center border-2 border-[#DFE104]">
-              RESUME // RANK
+              RESUME HACKER AI
             </div>
             <span className="hidden md:inline-block font-mono text-xs text-[#A1A1AA] uppercase tracking-widest">
-              AI ATS SCANNER & OPTIMIZER
+              AI RESUME SCANNER & OPTIMIZER
             </span>
           </div>
 
@@ -484,11 +484,6 @@ export default function Home() {
 
             {/* ── Hero Headline Section ── */}
             <section className="text-left space-y-8 pt-6">
-              <div className="inline-flex items-center gap-3 border-2 border-[#3F3F46] bg-[#09090B] px-4 py-2 text-xs font-mono uppercase tracking-widest text-[#DFE104]">
-                <Sparkles className="w-4 h-4 text-[#DFE104]" />
-                KINETIC ATS ENGINE v3.0
-              </div>
-
               <h1 className="text-clamp-hero font-bold uppercase tracking-tighter leading-none text-[#FAFAFA]">
                 BEAT THE ATS.<br />
                 <span className="text-[#DFE104]">LAND THE ROLE.</span>
@@ -983,7 +978,7 @@ export default function Home() {
 
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="faq-1">
-              <AccordionTrigger>HOW DOES THE KINETIC ATS SCORE ENGINE WORK?</AccordionTrigger>
+              <AccordionTrigger>HOW DOES THE RESUME HACKER ATS SCANNER WORK?</AccordionTrigger>
               <AccordionContent>
                 Our algorithm parses your resume text and compares it against target job description requirements using natural language vector embeddings, hard keyword matching, and recruiter formatting heuristics.
               </AccordionContent>
@@ -1008,10 +1003,10 @@ export default function Home() {
       {/* ── Bottom Full-Width Kinetic Footer ── */}
       <footer className="border-t-2 border-[#3F3F46] bg-[#DFE104] text-black mt-24 py-12">
         <KineticMarquee speed={18} bgColor="bg-[#DFE104]">
-          <span className="text-2xl font-bold text-black">RESUME RANKER AI // OBLITERATE THE ATS // DOMINATE YOUR CAREER //</span>
+          <span className="text-2xl font-bold text-black">RESUME HACKER AI // OBLITERATE THE ATS // DOMINATE YOUR CAREER //</span>
         </KineticMarquee>
         <div className="max-w-[95vw] mx-auto text-center font-mono text-xs font-bold uppercase tracking-widest pt-8">
-          © {new Date().getFullYear()} RESUME RANKER AI. ALL RIGHTS RESERVED. KINETIC TYPOGRAPHY EDITION.
+          © {new Date().getFullYear()} RESUME HACKER AI. ALL RIGHTS RESERVED.
         </div>
       </footer>
     </div>
